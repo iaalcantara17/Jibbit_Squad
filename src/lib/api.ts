@@ -111,6 +111,13 @@ class ApiClient {
     });
   }
 
+  async checkProvider(email: string) {
+    return this.request<{ provider: string }>('/auth/check-provider', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
   async forgotPassword(email: string) {
     return this.request('/auth/forgot-password', {
       method: 'POST',
