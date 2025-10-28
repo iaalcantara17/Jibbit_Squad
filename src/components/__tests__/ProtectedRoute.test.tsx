@@ -45,6 +45,9 @@ describe('ProtectedRoute', () => {
     vi.mocked(api.getProfile).mockImplementation(() =>
       new Promise(resolve => setTimeout(() => resolve({ success: true, data: {} as any }), 100))
     );
+    vi.mocked(api.getBasicInfo).mockImplementation(() =>
+      new Promise(resolve => setTimeout(() => resolve({ success: true, data: [] }), 100))
+    );
 
     const { container } = render(<MockedProtectedRoute token="test-token" />);
     
@@ -53,6 +56,10 @@ describe('ProtectedRoute', () => {
 
   it('should redirect to login when not authenticated', async () => {
     vi.mocked(api.getProfile).mockResolvedValue({
+      success: false,
+      error: { code: 401, message: 'Unauthorized' },
+    });
+    vi.mocked(api.getBasicInfo).mockResolvedValue({
       success: false,
       error: { code: 401, message: 'Unauthorized' },
     });
