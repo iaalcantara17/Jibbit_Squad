@@ -40,6 +40,7 @@ const Profile = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isOAuthUser, setIsOAuthUser] = useState(false);
   
   // Get the active tab from URL query parameter, default to 'overview'
   const activeTab = searchParams.get('section') || 'overview';
@@ -92,6 +93,14 @@ const Profile = () => {
             industry: '',
             experienceLevel: '',
           });
+        }
+        
+        // Check if user is OAuth
+        if (user.email) {
+          const providerResponse = await api.checkProvider(user.email);
+          if (providerResponse.success && providerResponse.data) {
+            setIsOAuthUser(providerResponse.data.provider !== 'local');
+          }
         }
       }
     };
@@ -197,19 +206,32 @@ const Profile = () => {
   };
 
   const handleDeleteAccount = async () => {
-    if (!deletePassword.trim()) {
-      toast({
-        title: 'Password required',
-        description: 'Please enter your password to confirm account deletion.',
-        variant: 'destructive',
-      });
-      return;
+    // Validate input based on user type
+    if (isOAuthUser) {
+      if (deletePassword.trim() !== 'DELETE MY ACCOUNT') {
+        toast({
+          title: 'Confirmation required',
+          description: 'Please type "DELETE MY ACCOUNT" exactly to confirm.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    } else {
+      if (!deletePassword.trim()) {
+        toast({
+          title: 'Password required',
+          description: 'Please enter your password to confirm account deletion.',
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
     setIsDeleting(true);
     
     try {
-      const result = await deleteAccount(deletePassword);
+      // For OAuth users, send empty string as password
+      const result = await deleteAccount(isOAuthUser ? '' : deletePassword);
       
       if (result.success) {
         toast({
@@ -220,7 +242,7 @@ const Profile = () => {
       } else {
         toast({
           title: 'Deletion failed',
-          description: result.error || 'Failed to delete account. Please check your password.',
+          description: result.error || (isOAuthUser ? 'Failed to delete account.' : 'Failed to delete account. Please check your password.'),
           variant: 'destructive',
         });
       }
@@ -243,7 +265,10 @@ const Profile = () => {
 
     try {
       // First update the user's name
-      await api.updateProfile({ name: basicInfo.name });
+      const nameUpdateResponse = await api.updateProfile({ name: basicInfo.name });
+      if (!nameUpdateResponse.success) {
+        throw new Error(nameUpdateResponse.error?.message || 'Failed to update name');
+      }
       
       let response;
       if (basicInfo.id) {
@@ -257,6 +282,21 @@ const Profile = () => {
           experienceLevel: basicInfo.experienceLevel?.trim() || '',
         };
         response = await api.updateBasicInfo(basicInfo.id, basicInfoData);
+        
+        // Update local state with response data
+        if (response.success && response.data) {
+          setBasicInfo({
+            id: response.data.id,
+            name: basicInfo.name,
+            email: basicInfo.email,
+            phoneNumber: response.data.phoneNumber || '',
+            location: response.data.location || '',
+            professionalHeadline: response.data.professionalHeadline || '',
+            bio: response.data.bio || '',
+            industry: response.data.industry || '',
+            experienceLevel: response.data.experienceLevel || '',
+          });
+        }
       } else {
         // Create new basic info - only send filled fields
         const basicInfoData: any = {};
@@ -267,13 +307,26 @@ const Profile = () => {
         if (basicInfo.industry?.trim()) basicInfoData.industry = basicInfo.industry.trim();
         if (basicInfo.experienceLevel?.trim()) basicInfoData.experienceLevel = basicInfo.experienceLevel.trim();
         response = await api.createBasicInfo(basicInfoData);
+        
+        // Update local state with response data including the new ID
         if (response.success && response.data) {
-          setBasicInfo(prev => ({ ...prev, id: response.data.id }));
+          setBasicInfo({
+            id: response.data.id,
+            name: basicInfo.name,
+            email: basicInfo.email,
+            phoneNumber: response.data.phoneNumber || '',
+            location: response.data.location || '',
+            professionalHeadline: response.data.professionalHeadline || '',
+            bio: response.data.bio || '',
+            industry: response.data.industry || '',
+            experienceLevel: response.data.experienceLevel || '',
+          });
         }
       }
 
       if (response.success) {
-        await refreshProfile();
+        // Update auth context in background without waiting
+        refreshProfile();
         
         toast({
           title: 'Profile updated',
@@ -290,7 +343,7 @@ const Profile = () => {
       console.error('❌ Exception during profile update:', error);
       toast({
         title: 'Error',
-        description: 'An unexpected error occurred',
+        description: error instanceof Error ? error.message : 'An unexpected error occurred',
         variant: 'destructive',
       });
     } finally {
@@ -675,15 +728,31 @@ const Profile = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="py-4">
-            <Label htmlFor="delete-password">Confirm your password</Label>
-            <Input
-              id="delete-password"
-              type="password"
-              placeholder="Enter your password"
-              value={deletePassword}
-              onChange={(e) => setDeletePassword(e.target.value)}
-              className="mt-2"
-            />
+            {isOAuthUser ? (
+              <>
+                <Label htmlFor="delete-confirmation">Type "DELETE MY ACCOUNT" to confirm</Label>
+                <Input
+                  id="delete-confirmation"
+                  type="text"
+                  placeholder="DELETE MY ACCOUNT"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  className="mt-2"
+                />
+              </>
+            ) : (
+              <>
+                <Label htmlFor="delete-password">Confirm your password</Label>
+                <Input
+                  id="delete-password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  className="mt-2"
+                />
+              </>
+            )}
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => {
