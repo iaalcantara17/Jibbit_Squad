@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,8 +12,9 @@ import { Github, Linkedin, Apple } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, loginWithToken } = useAuth();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   
   const [formData, setFormData] = useState({
     email: '',
@@ -21,14 +22,54 @@ const Login = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
 
+  // Handle OAuth token from URL parameter
+  useEffect(() => {
+    const token = searchParams.get('token');
+    if (token) {
+      handleOAuthToken(token);
+    }
+  }, [searchParams]);
+
+  const handleOAuthToken = async (token: string) => {
+    setIsLoading(true);
+    try {
+      // Use the loginWithToken function to properly update AuthContext
+      const result = await loginWithToken(token);
+      
+      if (result.success) {
+        toast({
+          title: 'Welcome!',
+          description: 'You have successfully logged in via OAuth.',
+        });
+        
+        // Redirect to dashboard
+        navigate('/dashboard');
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      toast({
+        title: 'Authentication failed',
+        description: 'Invalid or expired OAuth token.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleOAuthLogin = (provider: string) => {
-    toast({
-      title: 'OAuth Not Configured',
-      description: `${provider} authentication will be available once the backend is configured.`,
-      variant: 'default',
-    });
-    // TODO: Implement OAuth flow when backend is ready
-    // Example: window.location.href = `${API_BASE_URL}/auth/${provider}`;
+    if (provider === 'Google') {
+      // Redirect to backend Google OAuth endpoint
+      window.location.href = 'https://api.jibbit.app/api/auth/google';
+    } else {
+      // Other providers not yet configured
+      toast({
+        title: 'OAuth Not Configured',
+        description: `${provider} authentication will be available once the backend is configured.`,
+        variant: 'default',
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -62,7 +103,7 @@ const Login = () => {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-display">Welcome Back</CardTitle>
-            <CardDescription>Sign in to your ProfileForge account</CardDescription>
+            <CardDescription>Sign in to your JibbitATS account</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
