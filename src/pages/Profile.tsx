@@ -245,21 +245,27 @@ const Profile = () => {
       // First update the user's name
       await api.updateProfile({ name: basicInfo.name });
       
-      // Build basic info data - only include fields that have values
-      const basicInfoData: any = {};
-      if (basicInfo.phoneNumber?.trim()) basicInfoData.phoneNumber = basicInfo.phoneNumber.trim();
-      if (basicInfo.location?.trim()) basicInfoData.location = basicInfo.location.trim();
-      if (basicInfo.professionalHeadline?.trim()) basicInfoData.professionalHeadline = basicInfo.professionalHeadline.trim();
-      if (basicInfo.bio?.trim()) basicInfoData.bio = basicInfo.bio.trim();
-      if (basicInfo.industry?.trim()) basicInfoData.industry = basicInfo.industry.trim();
-      if (basicInfo.experienceLevel?.trim()) basicInfoData.experienceLevel = basicInfo.experienceLevel.trim();
-      
       let response;
       if (basicInfo.id) {
-        // Update existing basic info - send only filled fields
+        // Update existing basic info - send all fields to allow clearing
+        const basicInfoData: any = {
+          phoneNumber: basicInfo.phoneNumber?.trim() || '',
+          location: basicInfo.location?.trim() || '',
+          professionalHeadline: basicInfo.professionalHeadline?.trim() || '',
+          bio: basicInfo.bio?.trim() || '',
+          industry: basicInfo.industry?.trim() || '',
+          experienceLevel: basicInfo.experienceLevel?.trim() || '',
+        };
         response = await api.updateBasicInfo(basicInfo.id, basicInfoData);
       } else {
-        // Create new basic info - send only filled fields
+        // Create new basic info - only send filled fields
+        const basicInfoData: any = {};
+        if (basicInfo.phoneNumber?.trim()) basicInfoData.phoneNumber = basicInfo.phoneNumber.trim();
+        if (basicInfo.location?.trim()) basicInfoData.location = basicInfo.location.trim();
+        if (basicInfo.professionalHeadline?.trim()) basicInfoData.professionalHeadline = basicInfo.professionalHeadline.trim();
+        if (basicInfo.bio?.trim()) basicInfoData.bio = basicInfo.bio.trim();
+        if (basicInfo.industry?.trim()) basicInfoData.industry = basicInfo.industry.trim();
+        if (basicInfo.experienceLevel?.trim()) basicInfoData.experienceLevel = basicInfo.experienceLevel.trim();
         response = await api.createBasicInfo(basicInfoData);
         if (response.success && response.data) {
           setBasicInfo(prev => ({ ...prev, id: response.data.id }));
