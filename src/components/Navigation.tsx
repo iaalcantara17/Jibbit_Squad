@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Menu, X, LogOut, User } from 'lucide-react';
 import { useState } from 'react';
 import logo from '@/assets/logo.png';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export const Navigation = () => {
   const { user, logout } = useAuth();
@@ -24,7 +25,7 @@ export const Navigation = () => {
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2">
-          <img src={logo} alt="ProfileForge" className="h-8 w-auto" />
+          <img src={logo} alt="JibbitATS" className="h-8 w-auto" />
         </Link>
 
         {/* Desktop Navigation */}
@@ -48,6 +49,7 @@ export const Navigation = () => {
                 <User className="inline h-4 w-4 mr-1" />
                 Profile
               </Link>
+              <ThemeToggle />
               <Button variant="ghost" size="sm" onClick={handleLogout}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
@@ -55,6 +57,7 @@ export const Navigation = () => {
             </>
           ) : (
             <>
+              <ThemeToggle />
               <Link to="/login">
                 <Button variant="ghost" size="sm">
                   Login
@@ -108,6 +111,9 @@ export const Navigation = () => {
                   <User className="inline h-4 w-4 mr-1" />
                   Profile
                 </Link>
+                <div className="px-4 py-2">
+                  <ThemeToggle />
+                </div>
                 <button
                   onClick={handleLogout}
                   className="w-full text-left px-4 py-2 rounded-md text-sm font-medium text-foreground hover:bg-muted"
@@ -118,6 +124,9 @@ export const Navigation = () => {
               </>
             ) : (
               <>
+                <div className="px-4 py-2">
+                  <ThemeToggle />
+                </div>
                 <Link
                   to="/login"
                   onClick={() => setMobileMenuOpen(false)}
