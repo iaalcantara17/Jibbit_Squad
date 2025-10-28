@@ -43,6 +43,21 @@ const ForgotPassword = () => {
     e.preventDefault();
     
     setIsLoading(true);
+    
+    // First check if the account is OAuth
+    const providerCheck = await api.checkProvider(email);
+    
+    if (providerCheck.success && providerCheck.data?.provider !== 'local') {
+      setIsLoading(false);
+      toast({
+        title: 'OAuth Account',
+        description: 'This account uses Google Sign-In and does not have a password. Please sign in with Google instead.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // If local account, proceed with password reset
     const response = await api.forgotPassword(email);
     setIsLoading(false);
 
