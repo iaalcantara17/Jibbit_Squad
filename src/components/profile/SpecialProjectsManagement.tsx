@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Edit, Trash2, Folder, Calendar, Link as LinkIcon, Github, Code2, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Folder, Calendar, Link as LinkIcon, Github, Code2, Loader2, Grid3x3, List, Search, Share2, Download, Filter } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { api } from '@/lib/api';
 
@@ -24,6 +24,9 @@ interface ProjectEntry {
   repositoryUrl: string;
 }
 
+type ViewMode = 'grid' | 'list';
+type SortBy = 'date' | 'name' | 'relevance';
+
 export const SpecialProjectsManagement = () => {
   const { refreshProfile } = useAuth();
   const [entries, setEntries] = useState<ProjectEntry[]>([]);
@@ -32,6 +35,10 @@ export const SpecialProjectsManagement = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [techFilter, setTechFilter] = useState('');
+  const [sortBy, setSortBy] = useState<SortBy>('date');
   
   const [formData, setFormData] = useState<Omit<ProjectEntry, 'id'>>({
     name: '',
@@ -212,11 +219,94 @@ export const SpecialProjectsManagement = () => {
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
   };
 
-  const sortedEntries = [...entries].sort((a, b) => {
-    if (a.ongoing && !b.ongoing) return -1;
-    if (!a.ongoing && b.ongoing) return 1;
-    return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
-  });
+  const shareProject = (project: ProjectEntry) => {
+    const shareData = {
+      title: project.name,
+      text: `Check out my project: ${project.name}\n${project.description}`,
+      url: project.projectUrl || window.location.href,
+    };
+
+    if (navigator.share) {
+      navigator.share(shareData).catch(() => {
+        copyToClipboard(project);
+      });
+    } else {
+      copyToClipboard(project);
+    }
+  };
+
+  const copyToClipboard = (project: ProjectEntry) => {
+    const text = `${project.name}\n${project.description}\n${project.projectUrl || window.location.href}`;
+    navigator.clipboard.writeText(text);
+    toast({
+      title: 'Copied to clipboard',
+      description: 'Project details copied to clipboard',
+    });
+  };
+
+  const printProject = (project: ProjectEntry) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${project.name}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+            h1 { color: #333; }
+            .meta { color: #666; margin: 20px 0; }
+            .section { margin: 20px 0; }
+            .label { font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <h1>${project.name}</h1>
+          <div class="meta">
+            <p><span class="label">Role:</span> ${project.role}</p>
+            <p><span class="label">Duration:</span> ${formatDate(project.startDate)} - ${project.ongoing ? 'Present' : formatDate(project.endDate)}</p>
+            <p><span class="label">Technologies:</span> ${project.technologies}</p>
+          </div>
+          <div class="section">
+            <p class="label">Description:</p>
+            <p>${project.description}</p>
+          </div>
+          ${project.projectUrl ? `<div class="section"><p class="label">Project URL:</p><p>${project.projectUrl}</p></div>` : ''}
+          ${project.repositoryUrl ? `<div class="section"><p class="label">Repository:</p><p>${project.repositoryUrl}</p></div>` : ''}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
+  // Filter and sort projects
+  const filteredAndSortedEntries = entries
+    .filter(entry => {
+      const matchesSearch = 
+        entry.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        entry.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        entry.role.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesTech = !techFilter || 
+        entry.technologies.toLowerCase().includes(techFilter.toLowerCase());
+      
+      return matchesSearch && matchesTech;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'name') {
+        return a.name.localeCompare(b.name);
+      }
+      if (sortBy === 'date') {
+        if (a.ongoing && !b.ongoing) return -1;
+        if (!a.ongoing && b.ongoing) return 1;
+        return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+      }
+      // relevance - ongoing first, then by date
+      if (a.ongoing && !b.ongoing) return -1;
+      if (!a.ongoing && b.ongoing) return 1;
+      return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+    });
 
   if (isLoading) {
     return (
@@ -228,10 +318,65 @@ export const SpecialProjectsManagement = () => {
 
   return (
     <div className="space-y-6">
+      {/* Search, Filter, and View Controls */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search projects..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          
+          <div className="flex gap-2">
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'outline'}
+              size="icon"
+              onClick={() => setViewMode('grid')}
+            >
+              <Grid3x3 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'outline'}
+              size="icon"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Filter by technology..."
+              value={techFilter}
+              onChange={(e) => setTechFilter(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortBy)}
+            className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="relevance">Sort by: Relevance</option>
+            <option value="date">Sort by: Date</option>
+            <option value="name">Sort by: Name</option>
+          </select>
+        </div>
+      </div>
+
       {isAdding ? (
         <Card className="border-primary">
           <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-6">
+              
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="name">Project Name *</Label>
@@ -375,9 +520,9 @@ export const SpecialProjectsManagement = () => {
         </Button>
       )}
 
-      {sortedEntries.length > 0 ? (
-        <div className="space-y-4">
-          {sortedEntries.map((entry) => (
+      {filteredAndSortedEntries.length > 0 ? (
+        <div className={viewMode === 'grid' ? 'grid md:grid-cols-2 gap-4' : 'space-y-4'}>
+          {filteredAndSortedEntries.map((entry) => (
             <Card key={entry.id} className="hover-scale">
               <CardContent className="pt-6">
                 <div className="flex justify-between items-start gap-4">
@@ -407,36 +552,50 @@ export const SpecialProjectsManagement = () => {
                         <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
                           {entry.description}
                         </p>
-                        {(entry.projectUrl || entry.repositoryUrl) && (
-                          <div className="flex flex-wrap gap-3 mt-3">
-                            {entry.projectUrl && (
-                              <a
-                                href={entry.projectUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-1 text-sm text-primary hover:underline"
-                              >
-                                <LinkIcon className="h-3 w-3" />
-                                View Project
-                              </a>
-                            )}
-                            {entry.repositoryUrl && (
-                              <a
-                                href={entry.repositoryUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-1 text-sm text-primary hover:underline"
-                              >
-                                <Github className="h-3 w-3" />
-                                View Repository
-                              </a>
-                            )}
-                          </div>
-                        )}
+                        <div className="flex flex-wrap gap-3 mt-3">
+                          {entry.projectUrl && (
+                            <a
+                              href={entry.projectUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-sm text-primary hover:underline"
+                            >
+                              <LinkIcon className="h-3 w-3" />
+                              View Project
+                            </a>
+                          )}
+                          {entry.repositoryUrl && (
+                            <a
+                              href={entry.repositoryUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-sm text-primary hover:underline"
+                            >
+                              <Github className="h-3 w-3" />
+                              View Repository
+                            </a>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
                   <div className="flex gap-2">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => shareProject(entry)}
+                      title="Share project"
+                    >
+                      <Share2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => printProject(entry)}
+                      title="Print project"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
                     <Button
                       size="icon"
                       variant="ghost"
@@ -462,9 +621,13 @@ export const SpecialProjectsManagement = () => {
           <Card>
             <CardContent className="py-12 text-center">
               <Folder className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No special projects added yet</p>
+              <p className="text-muted-foreground">
+                {searchQuery || techFilter ? 'No projects match your filters' : 'No projects added yet'}
+              </p>
               <p className="text-sm text-muted-foreground mt-2">
-                Showcase your notable projects and achievements
+                {searchQuery || techFilter
+                  ? 'Try adjusting your search or filters'
+                  : 'Add special projects to showcase your work beyond regular employment'}
               </p>
             </CardContent>
           </Card>
@@ -476,7 +639,7 @@ export const SpecialProjectsManagement = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete this project. This action cannot be undone.
+              This action cannot be undone. This will permanently delete the project from your profile.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
