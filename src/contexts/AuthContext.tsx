@@ -6,6 +6,7 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithToken: (token: string) => Promise<{ success: boolean; error?: string }>;
   register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   deleteAccount: (password: string) => Promise<{ success: boolean; error?: string }>;
@@ -74,6 +75,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   };
 
+  const loginWithToken = async (authToken: string) => {
+    try {
+      localStorage.setItem('auth_token', authToken);
+      setToken(authToken);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: 'Failed to authenticate with provided token'
+      };
+    }
+  };
+
   const register = async (name: string, email: string, password: string) => {
     const response = await api.register({ name, email, password });
     
@@ -113,7 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, deleteAccount, refreshProfile }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, loginWithToken, register, logout, deleteAccount, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
