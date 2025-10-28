@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { Menu, X, LogOut, User } from 'lucide-react';
 import { useState } from 'react';
-import logo from '@/assets/jibbitats-logo.png';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
 export const Navigation = () => {
