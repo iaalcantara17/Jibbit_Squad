@@ -245,22 +245,21 @@ const Profile = () => {
       // First update the user's name
       await api.updateProfile({ name: basicInfo.name });
       
-      // Then handle basic info (create or update) - send all fields including empty ones
-      const basicInfoData: any = {
-        phoneNumber: basicInfo.phoneNumber || '',
-        location: basicInfo.location || '',
-        professionalHeadline: basicInfo.professionalHeadline || '',
-        bio: basicInfo.bio || '',
-        industry: basicInfo.industry || '',
-        experienceLevel: basicInfo.experienceLevel || '',
-      };
+      // Build basic info data - only include fields that have values
+      const basicInfoData: any = {};
+      if (basicInfo.phoneNumber?.trim()) basicInfoData.phoneNumber = basicInfo.phoneNumber.trim();
+      if (basicInfo.location?.trim()) basicInfoData.location = basicInfo.location.trim();
+      if (basicInfo.professionalHeadline?.trim()) basicInfoData.professionalHeadline = basicInfo.professionalHeadline.trim();
+      if (basicInfo.bio?.trim()) basicInfoData.bio = basicInfo.bio.trim();
+      if (basicInfo.industry?.trim()) basicInfoData.industry = basicInfo.industry.trim();
+      if (basicInfo.experienceLevel?.trim()) basicInfoData.experienceLevel = basicInfo.experienceLevel.trim();
       
       let response;
       if (basicInfo.id) {
-        // Update existing basic info
+        // Update existing basic info - send only filled fields
         response = await api.updateBasicInfo(basicInfo.id, basicInfoData);
       } else {
-        // Create new basic info
+        // Create new basic info - send only filled fields
         response = await api.createBasicInfo(basicInfoData);
         if (response.success && response.data) {
           setBasicInfo(prev => ({ ...prev, id: response.data.id }));
