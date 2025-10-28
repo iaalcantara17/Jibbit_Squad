@@ -9,7 +9,7 @@ interface AuthContextType {
   loginWithToken: (token: string) => Promise<{ success: boolean; error?: string }>;
   register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
-  deleteAccount: (password: string) => Promise<{ success: boolean; error?: string }>;
+  deleteAccount: (password: string, isOAuthUser?: boolean) => Promise<{ success: boolean; error?: string }>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -36,12 +36,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const basicInfoResponse = await api.getBasicInfo();
       let userData = response.data;
       
-      if (basicInfoResponse.success && basicInfoResponse.data && basicInfoResponse.data.length > 0) {
-        // Merge the first basic info entry into the user data
-        userData = {
-          ...response.data,
-          basicInfo: basicInfoResponse.data[0]
-        };
+      if (basicInfoResponse.success) {
+        const payload = basicInfoResponse.data as any;
+        const basic = Array.isArray(payload)
+          ? (payload[0] ?? null)
+          : (payload && typeof payload === 'object' ? payload : null);
+        if (basic) {
+          userData = {
+            ...response.data,
+            basicInfo: basic
+          };
+        }
       }
       
       console.log('🔵 Setting user data:', userData);
@@ -109,8 +114,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     api.logout();
   };
 
-  const deleteAccount = async (password: string) => {
-    const response = await api.deleteAccount(password);
+  const deleteAccount = async (password: string, isOAuthUser: boolean = false) => {
+    const response = await api.deleteAccount(password, isOAuthUser);
     
     if (response.success) {
       // Clear auth state after successful deletion

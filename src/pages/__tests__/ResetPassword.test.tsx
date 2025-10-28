@@ -2,15 +2,18 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render } from '@testing-library/react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ResetPassword from '../ResetPassword';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 
 vi.mock('@/lib/api');
 
 const MockedResetPassword = ({ token = 'test-token' }: { token?: string }) => (
   <BrowserRouter>
-    <Routes>
-      <Route path="/reset-password/:token" element={<ResetPassword />} />
-    </Routes>
+    <AuthProvider>
+      <Routes>
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
+      </Routes>
+    </AuthProvider>
   </BrowserRouter>
 );
 
