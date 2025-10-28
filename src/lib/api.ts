@@ -1,305 +1,151 @@
-// API client for backend communication
-const API_BASE_URL = 'http://34.207.119.121:5000/api';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+import { Menu, X, LogOut, User } from 'lucide-react';
+import { useState } from 'react';
+import logo from '@/assets/logo.png';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
-export interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  message?: string;
-  error?: {
-    code: number;
-    message: string;
-    fields?: string[];
+export const Navigation = () => {
+  const { user, logout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+    setMobileMenuOpen(false);
   };
-}
 
-export interface RegisterData {
-  name: string;
-  email: string;
-  password: string;
-}
+  const isActive = (path: string) => location.pathname === path;
 
-export interface LoginData {
-  email: string;
-  password: string;
-}
+  return (
+    <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-16 items-center justify-between">
+        {/* Logo */}
+        <Link to="/" className="flex items-center space-x-2">
+          <img src={logo} alt="JibbitATS logo" className="h-8 w-auto" />
+        </Link>
 
-export interface UserProfile {
-  _id?: string;
-  user_id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  location?: string;
-  headline?: string;
-  bio?: string;
-  industry?: string;
-  experienceLevel?: string;
-  basicInfo?: {
-    phoneNumber?: string;
-    location?: string;
-    professionalHeadline?: string;
-    bio?: string;
-    industry?: string;
-    experienceLevel?: string;
-  };
-  employmentHistory?: any[];
-  skills?: any[];
-  education?: any[];
-  certifications?: any[];
-  projects?: any[];
-  createdAt: string;
-  updatedAt: string;
-  __v?: number;
-}
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex md:items-center md:space-x-6">
+          {user ? (
+            <>
+              <Link
+                to="/dashboard"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  isActive('/dashboard') ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                Dashboard
+              </Link>
+              <Link
+                to="/profile"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  isActive('/profile') ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                <User className="inline h-4 w-4 mr-1" />
+                Profile
+              </Link>
+              <ThemeToggle />
+              <Button variant="ghost" size="sm" onClick={handleLogout}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <ThemeToggle />
+              <Link to="/login">
+                <Button variant="ghost" size="sm">
+                  Login
+                </Button>
+              </Link>
+              <Link to="/register">
+                <Button size="sm">
+                  Get Started
+                </Button>
+              </Link>
+            </>
+          )}
+        </div>
 
-class ApiClient {
-  private getAuthHeader(): HeadersInit {
-    const token = localStorage.getItem('auth_token');
-    return token ? { 'Authorization': `Bearer ${token}` } : {};
-  }
+        {/* Mobile Menu Button */}
+        <button
+          className="md:hidden p-2"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle menu"
+        >
+          {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </button>
+      </div>
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<ApiResponse<T>> {
-    try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          ...this.getAuthHeader(),
-          ...options.headers,
-        },
-      });
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      return {
-        success: false,
-        error: {
-          code: 500,
-          message: 'Network error. Please check your connection.',
-        },
-      };
-    }
-  }
-
-  // Auth endpoints
-  async register(data: RegisterData) {
-    return this.request<{ id: string; email: string }>('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async login(data: LoginData) {
-    return this.request<{ token: string }>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async logout() {
-    return this.request('/auth/logout', { method: 'POST' });
-  }
-
-  async deleteAccount(password: string) {
-    return this.request<void>('/auth/delete-account', {
-      method: 'DELETE',
-      body: JSON.stringify({ password }),
-    });
-  }
-
-  async checkProvider(email: string) {
-    return this.request<{ provider: string }>('/auth/check-provider', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-    });
-  }
-
-  async forgotPassword(email: string) {
-    return this.request('/auth/forgot-password', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-    });
-  }
-
-  async resetPassword(token: string, password: string) {
-    return this.request(`/auth/reset-password/${token}`, {
-      method: 'POST',
-      body: JSON.stringify({ password }),
-    });
-  }
-
-  async verifyOAuthToken(token: string) {
-    return this.request<{ token: string }>('/auth/verify-token', {
-      method: 'POST',
-      body: JSON.stringify({ token }),
-    });
-  }
-
-  // User endpoints
-  async getProfile() {
-    return this.request<UserProfile>('/users/me');
-  }
-
-  async updateProfile(profileData: Partial<UserProfile>) {
-    return this.request<UserProfile>('/users/me', {
-      method: 'PUT',
-      body: JSON.stringify(profileData),
-    });
-  }
-
-  // Basic Info endpoints
-  async getBasicInfo() {
-    return this.request<any[]>('/users/me/basic-info');
-  }
-
-  async createBasicInfo(data: any) {
-    return this.request<any>('/users/me/basic-info', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async updateBasicInfo(id: string, data: any) {
-    return this.request<any>(`/users/me/basic-info/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async deleteBasicInfo(id: string) {
-    return this.request<null>(`/users/me/basic-info/${id}`, {
-      method: 'DELETE',
-    });
-  }
-
-  // Employment History endpoints
-  async getEmploymentHistory() {
-    return this.request<any[]>('/users/me/employment');
-  }
-
-  async addEmployment(data: any) {
-    return this.request<any>('/users/me/employment', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async updateEmployment(id: string, data: any) {
-    return this.request<any>(`/users/me/employment/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async deleteEmployment(id: string) {
-    return this.request<null>(`/users/me/employment/${id}`, {
-      method: 'DELETE',
-    });
-  }
-
-  // Skills endpoints
-  async getSkills() {
-    return this.request<any[]>('/users/me/skills');
-  }
-
-  async addSkill(data: any) {
-    return this.request<any>('/users/me/skills', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async updateSkill(id: string, data: any) {
-    return this.request<any>(`/users/me/skills/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async deleteSkill(id: string) {
-    return this.request<null>(`/users/me/skills/${id}`, {
-      method: 'DELETE',
-    });
-  }
-
-  // Education endpoints
-  async getEducation() {
-    return this.request<any[]>('/users/me/education');
-  }
-
-  async addEducation(data: any) {
-    return this.request<any>('/users/me/education', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async updateEducation(id: string, data: any) {
-    return this.request<any>(`/users/me/education/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async deleteEducation(id: string) {
-    return this.request<null>(`/users/me/education/${id}`, {
-      method: 'DELETE',
-    });
-  }
-
-  // Certifications endpoints
-  async getCertifications() {
-    return this.request<any[]>('/users/me/certifications');
-  }
-
-  async addCertification(data: any) {
-    return this.request<any>('/users/me/certifications', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async updateCertification(id: string, data: any) {
-    return this.request<any>(`/users/me/certifications/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async deleteCertification(id: string) {
-    return this.request<null>(`/users/me/certifications/${id}`, {
-      method: 'DELETE',
-    });
-  }
-
-  // Projects endpoints
-  async getProjects() {
-    return this.request<any[]>('/users/me/projects');
-  }
-
-  async addProject(data: any) {
-    return this.request<any>('/users/me/projects', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async updateProject(id: string, data: any) {
-    return this.request<any>(`/users/me/projects/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async deleteProject(id: string) {
-    return this.request<null>(`/users/me/projects/${id}`, {
-      method: 'DELETE',
-    });
-  }
-}
-
-export const api = new ApiClient();
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-border bg-background">
+          <div className="container py-4 space-y-3">
+            {user ? (
+              <>
+                <Link
+                  to="/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/dashboard')
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  to="/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/profile')
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <User className="inline h-4 w-4 mr-1" />
+                  Profile
+                </Link>
+                <div className="px-4 py-2">
+                  <ThemeToggle />
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left px-4 py-2 rounded-md text-sm font-medium text-foreground hover:bg-muted"
+                >
+                  <LogOut className="inline h-4 w-4 mr-2" />
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="px-4 py-2">
+                  <ThemeToggle />
+                </div>
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-4 py-2 rounded-md text-sm font-medium text-foreground hover:bg-muted"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-4 py-2 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </nav>
+  );
+};
