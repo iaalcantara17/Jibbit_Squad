@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,11 +10,36 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 const ForgotPassword = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { token } = useParams<{ token: string }>();
+  
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const validatePassword = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!password) {
+      newErrors.password = 'Password is required';
+    } else if (password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+      newErrors.password = 'Password must contain uppercase, lowercase, and number';
+    }
+
+    if (password !== confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     setIsLoading(true);
@@ -36,6 +61,102 @@ const ForgotPassword = () => {
     }
   };
 
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validatePassword() || !token) return;
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`https://api.jibbit.app/api/auth/reset-password/${token}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+      });
+
+      const data = await response.json();
+      setIsLoading(false);
+
+      if (data.success) {
+        toast({
+          title: 'Success',
+          description: 'Your password has been reset successfully.',
+        });
+        
+        setTimeout(() => {
+          navigate('/login');
+        }, 1500);
+      } else {
+        toast({
+          title: 'Error',
+          description: data.message || 'Failed to reset password',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      setIsLoading(false);
+      toast({
+        title: 'Error',
+        description: 'Failed to reset password. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // If there's a token, show password reset form
+  if (token) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navigation />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <CardTitle className="text-3xl font-display">Set New Password</CardTitle>
+              <CardDescription>Enter your new password below</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handlePasswordReset} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="password">New Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={errors.password ? 'border-destructive' : ''}
+                  />
+                  {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+                  <p className="text-xs text-muted-foreground">
+                    Must be at least 8 characters with 1 uppercase, 1 lowercase, and 1 number
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={errors.confirmPassword ? 'border-destructive' : ''}
+                  />
+                  {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
+                </div>
+
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? 'Resetting...' : 'Reset Password'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // If email was sent successfully, show confirmation
   if (isSuccess) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -64,6 +185,7 @@ const ForgotPassword = () => {
     );
   }
 
+  // Default view: email request form
   return (
     <div className="min-h-screen flex flex-col">
       <Navigation />
@@ -76,7 +198,7 @@ const ForgotPassword = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleEmailSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
