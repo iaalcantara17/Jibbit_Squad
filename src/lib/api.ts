@@ -125,6 +125,13 @@ class ApiClient {
     });
   }
 
+  async verifyOAuthToken(token: string) {
+    return this.request<{ token: string }>('/auth/verify-token', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+  }
+
   // User endpoints
   async getProfile() {
     return this.request<UserProfile>('/users/me');
