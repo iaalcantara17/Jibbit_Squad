@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,8 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Plus, Edit, Trash2, Briefcase, Calendar, MapPin, Loader2 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
-import { api } from '@/lib/api';
+import { toast } from 'sonner';
+import { useProfileData } from './ProfileDataManager';
 
 interface EmploymentEntry {
   id: string;
@@ -23,7 +22,7 @@ interface EmploymentEntry {
 }
 
 export const EmploymentHistory = () => {
-  const { refreshProfile } = useAuth();
+  const { profile, updateProfileField } = useProfileData();
   const [entries, setEntries] = useState<EmploymentEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
@@ -43,19 +42,13 @@ export const EmploymentHistory = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Fetch employment history on mount
+  // Load employment history from profile
   useEffect(() => {
-    fetchEmploymentHistory();
-  }, []);
-
-  const fetchEmploymentHistory = async () => {
-    setIsLoading(true);
-    const response = await api.getEmploymentHistory();
-    if (response.success && response.data) {
-      setEntries(response.data);
+    if (profile?.employment_history) {
+      setEntries(profile.employment_history);
     }
     setIsLoading(false);
-  };
+  }, [profile]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -84,50 +77,25 @@ export const EmploymentHistory = () => {
     setIsSaving(true);
 
     try {
+      const currentHistory = profile?.employment_history || [];
+      
+      let updatedHistory;
       if (editingId) {
-        // Update existing entry
-        const response = await api.updateEmployment(editingId, formData);
-        if (response.success) {
-          await fetchEmploymentHistory();
-          await refreshProfile();
-          toast({
-            title: 'Employment updated',
-            description: 'Your work experience has been updated successfully.',
-          });
-          setEditingId(null);
-        } else {
-          toast({
-            title: 'Update failed',
-            description: response.error?.message || 'Failed to update employment',
-            variant: 'destructive',
-          });
-        }
+        updatedHistory = currentHistory.map(entry => 
+          entry.id === editingId ? { ...formData, id: editingId } : entry
+        );
+        toast.success('Your work experience has been updated successfully.');
       } else {
-        // Add new entry
-        const response = await api.addEmployment(formData);
-        if (response.success) {
-          await fetchEmploymentHistory();
-          await refreshProfile();
-          toast({
-            title: 'Employment added',
-            description: 'Your work experience has been added successfully.',
-          });
-        } else {
-          toast({
-            title: 'Add failed',
-            description: response.error?.message || 'Failed to add employment',
-            variant: 'destructive',
-          });
-        }
+        const newEntry = { ...formData, id: crypto.randomUUID() };
+        updatedHistory = [...currentHistory, newEntry];
+        toast.success('Your work experience has been added successfully.');
       }
-
+      
+      await updateProfileField('employment_history', updatedHistory);
+      setEditingId(null);
       resetForm();
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred',
-        variant: 'destructive',
-      });
+      toast.error('An unexpected error occurred');
     } finally {
       setIsSaving(false);
     }
@@ -150,20 +118,12 @@ export const EmploymentHistory = () => {
   const handleDelete = async () => {
     if (!deleteId) return;
 
-    const response = await api.deleteEmployment(deleteId);
-    if (response.success) {
-      await fetchEmploymentHistory();
-      await refreshProfile();
-      toast({
-        title: 'Employment deleted',
-        description: 'The entry has been removed from your profile.',
-      });
-    } else {
-      toast({
-        title: 'Delete failed',
-        description: response.error?.message || 'Failed to delete employment',
-        variant: 'destructive',
-      });
+    try {
+      const updatedHistory = (profile?.employment_history || []).filter(entry => entry.id !== deleteId);
+      await updateProfileField('employment_history', updatedHistory);
+      toast.success('The entry has been removed from your profile.');
+    } catch (error) {
+      toast.error('Failed to delete employment');
     }
     setDeleteId(null);
   };

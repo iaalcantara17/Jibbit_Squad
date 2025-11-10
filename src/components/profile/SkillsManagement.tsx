@@ -6,8 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Plus, X, Code, MessageSquare, Languages, Wrench, Loader2, Search, Download, GripVertical } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
-import { api } from '@/lib/api';
+import { useProfileData } from './ProfileDataManager';
+import { toast } from 'sonner';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 
 interface Skill {
@@ -32,7 +32,8 @@ const proficiencyColors = {
 };
 
 export const SkillsManagement = () => {
-  const { refreshProfile } = useAuth();
+  const { refreshProfile, profile } = useAuth();
+  const { updateProfileField } = useProfileData();
   const [skills, setSkills] = useState<Skill[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
@@ -53,10 +54,8 @@ export const SkillsManagement = () => {
 
   const fetchSkills = async () => {
     setIsLoading(true);
-    const response = await api.getSkills();
-    if (response.success && response.data) {
-      setSkills(response.data);
-    }
+    const skills = (profile?.skills || []) as Skill[];
+    setSkills(skills);
     setIsLoading(false);
   };
 
@@ -64,11 +63,7 @@ export const SkillsManagement = () => {
     e.preventDefault();
     
     if (!formData.name.trim()) {
-      toast({
-        title: 'Skill name required',
-        description: 'Please enter a skill name',
-        variant: 'destructive',
-      });
+      toast.error('Please enter a skill name');
       return;
     }
 
@@ -77,11 +72,7 @@ export const SkillsManagement = () => {
     );
     
     if (duplicate) {
-      toast({
-        title: 'Duplicate skill',
-        description: 'This skill already exists in your profile',
-        variant: 'destructive',
-      });
+      toast.error('This skill already exists in your profile');
       return;
     }
 
@@ -89,47 +80,23 @@ export const SkillsManagement = () => {
 
     try {
       if (editingId) {
-        const response = await api.updateSkill(editingId, formData);
-        if (response.success) {
-          await fetchSkills();
-          await refreshProfile();
-          toast({
-            title: 'Skill updated',
-            description: 'Your skill has been updated successfully',
-          });
-          setEditingId(null);
-        } else {
-          toast({
-            title: 'Update failed',
-            description: response.error?.message || 'Failed to update skill',
-            variant: 'destructive',
-          });
-        }
+        const updatedSkills = skills.map(s => s.id === editingId ? { ...formData, id: editingId } : s);
+        await updateProfileField('skills', updatedSkills);
+        await fetchSkills();
+        await refreshProfile();
+        toast.success('Skill updated successfully');
+        setEditingId(null);
       } else {
-        const response = await api.addSkill(formData);
-        if (response.success) {
-          await fetchSkills();
-          await refreshProfile();
-          toast({
-            title: 'Skill added',
-            description: 'New skill has been added to your profile',
-          });
-        } else {
-          toast({
-            title: 'Add failed',
-            description: response.error?.message || 'Failed to add skill',
-            variant: 'destructive',
-          });
-        }
+        const newSkill = { ...formData, id: crypto.randomUUID() };
+        await updateProfileField('skills', [...skills, newSkill]);
+        await fetchSkills();
+        await refreshProfile();
+        toast.success('Skill added successfully');
       }
 
       resetForm();
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred',
-        variant: 'destructive',
-      });
+      toast.error('An unexpected error occurred');
     } finally {
       setIsSaving(false);
     }
@@ -146,36 +113,19 @@ export const SkillsManagement = () => {
   };
 
   const handleDelete = async (id: string) => {
-    const response = await api.deleteSkill(id);
-    if (response.success) {
-      await fetchSkills();
-      await refreshProfile();
-      toast({
-        title: 'Skill removed',
-        description: 'The skill has been removed from your profile',
-      });
-    } else {
-      toast({
-        title: 'Delete failed',
-        description: response.error?.message || 'Failed to delete skill',
-        variant: 'destructive',
-      });
-    }
+    const updatedSkills = skills.filter(s => s.id !== id);
+    await updateProfileField('skills', updatedSkills);
+    await fetchSkills();
+    await refreshProfile();
+    toast.success('Skill removed from your profile');
   };
 
   const handleMoveToCategory = async (skillId: string, newCategory: Skill['category']) => {
-    const skill = skills.find(s => s.id === skillId);
-    if (!skill) return;
-
-    const response = await api.updateSkill(skillId, { ...skill, category: newCategory });
-    if (response.success) {
-      await fetchSkills();
-      await refreshProfile();
-      toast({
-        title: 'Skill moved',
-        description: `Skill moved to ${newCategory}`,
-      });
-    }
+    const updatedSkills = skills.map(s => s.id === skillId ? { ...s, category: newCategory } : s);
+    await updateProfileField('skills', updatedSkills);
+    await fetchSkills();
+    await refreshProfile();
+    toast.success(`Skill moved to ${newCategory}`);
   };
 
   const handleDragEnd = async (result: DropResult) => {
@@ -202,10 +152,7 @@ export const SkillsManagement = () => {
     a.click();
     window.URL.revokeObjectURL(url);
 
-    toast({
-      title: 'Skills exported',
-      description: 'Your skills have been exported to CSV',
-    });
+    toast.success('Your skills have been exported to CSV');
   };
 
   const resetForm = () => {

@@ -8,8 +8,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Plus, Edit, Trash2, Folder, Calendar, Link as LinkIcon, Github, Code2, Loader2, Grid3x3, List, Search, Share2, Download, Filter } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
-import { api } from '@/lib/api';
+import { toast } from 'sonner';
+import { useProfileData } from './ProfileDataManager';
 
 interface ProjectEntry {
   id: string;
@@ -28,7 +28,8 @@ type ViewMode = 'grid' | 'list';
 type SortBy = 'date' | 'name' | 'relevance';
 
 export const SpecialProjectsManagement = () => {
-  const { refreshProfile } = useAuth();
+  const { refreshProfile, profile } = useAuth();
+  const { updateProfileField } = useProfileData();
   const [entries, setEntries] = useState<ProjectEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
@@ -60,10 +61,8 @@ export const SpecialProjectsManagement = () => {
 
   const fetchProjects = async () => {
     setIsLoading(true);
-    const response = await api.getProjects();
-    if (response.success && response.data) {
-      setEntries(response.data);
-    }
+    const projects = (profile?.projects || []) as ProjectEntry[];
+    setEntries(projects);
     setIsLoading(false);
   };
 
@@ -113,47 +112,23 @@ export const SpecialProjectsManagement = () => {
 
     try {
       if (editingId) {
-        const response = await api.updateProject(editingId, formData);
-        if (response.success) {
-          await fetchProjects();
-          await refreshProfile();
-          toast({
-            title: 'Project updated',
-            description: 'Your project has been updated successfully.',
-          });
-          setEditingId(null);
-        } else {
-          toast({
-            title: 'Update failed',
-            description: response.error?.message || 'Failed to update project',
-            variant: 'destructive',
-          });
-        }
+        const updatedProjects = entries.map(p => p.id === editingId ? { ...formData, id: editingId } : p);
+        await updateProfileField('projects', updatedProjects);
+        await fetchProjects();
+        await refreshProfile();
+        toast.success('Project updated successfully');
+        setEditingId(null);
       } else {
-        const response = await api.addProject(formData);
-        if (response.success) {
-          await fetchProjects();
-          await refreshProfile();
-          toast({
-            title: 'Project added',
-            description: 'Your project has been added successfully.',
-          });
-        } else {
-          toast({
-            title: 'Add failed',
-            description: response.error?.message || 'Failed to add project',
-            variant: 'destructive',
-          });
-        }
+        const newProject = { ...formData, id: crypto.randomUUID() };
+        await updateProfileField('projects', [...entries, newProject]);
+        await fetchProjects();
+        await refreshProfile();
+        toast.success('Project added successfully');
       }
 
       resetForm();
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred',
-        variant: 'destructive',
-      });
+      toast.error('An unexpected error occurred');
     } finally {
       setIsSaving(false);
     }
@@ -177,22 +152,13 @@ export const SpecialProjectsManagement = () => {
 
   const handleDelete = async () => {
     if (!deleteId) return;
-
-    const response = await api.deleteProject(deleteId);
-    if (response.success) {
-      await fetchProjects();
-      await refreshProfile();
-      toast({
-        title: 'Project deleted',
-        description: 'The project has been removed from your profile.',
-      });
-    } else {
-      toast({
-        title: 'Delete failed',
-        description: response.error?.message || 'Failed to delete project',
-        variant: 'destructive',
-      });
-    }
+    
+    const updatedProjects = entries.filter(p => p.id !== deleteId);
+    await updateProfileField('projects', updatedProjects);
+    await fetchProjects();
+    await refreshProfile();
+    toast.success('Project removed from your profile');
+    
     setDeleteId(null);
   };
 
@@ -238,10 +204,7 @@ export const SpecialProjectsManagement = () => {
   const copyToClipboard = (project: ProjectEntry) => {
     const text = `${project.name}\n${project.description}\n${project.projectUrl || window.location.href}`;
     navigator.clipboard.writeText(text);
-    toast({
-      title: 'Copied to clipboard',
-      description: 'Project details copied to clipboard',
-    });
+    toast.success('Project details copied to clipboard');
   };
 
   const printProject = (project: ProjectEntry) => {

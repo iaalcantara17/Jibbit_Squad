@@ -8,8 +8,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Plus, Edit, Trash2, GraduationCap, Calendar, Award, Loader2 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
-import { api } from '@/lib/api';
+import { toast } from 'sonner';
+import { useProfileData } from './ProfileDataManager';
 
 interface EducationEntry {
   id: string;
@@ -36,7 +36,8 @@ const educationLevels = [
 ];
 
 export const EducationManagement = () => {
-  const { refreshProfile } = useAuth();
+  const { refreshProfile, profile } = useAuth();
+  const { updateProfileField } = useProfileData();
   const [entries, setEntries] = useState<EducationEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
@@ -49,10 +50,10 @@ export const EducationManagement = () => {
     degree: '',
     fieldOfStudy: '',
     graduationDate: '',
-    gpa: '',
-    showGpa: true,
     currentlyEnrolled: false,
-    educationLevel: 'Bachelor',
+    gpa: '',
+    showGpa: false,
+    educationLevel: '',
     achievements: '',
   });
 
@@ -64,10 +65,8 @@ export const EducationManagement = () => {
 
   const fetchEducation = async () => {
     setIsLoading(true);
-    const response = await api.getEducation();
-    if (response.success && response.data) {
-      setEntries(response.data);
-    }
+    const education = (profile?.education || []) as EducationEntry[];
+    setEntries(education);
     setIsLoading(false);
   };
 
@@ -94,47 +93,23 @@ export const EducationManagement = () => {
 
     try {
       if (editingId) {
-        const response = await api.updateEducation(editingId, formData);
-        if (response.success) {
-          await fetchEducation();
-          await refreshProfile();
-          toast({
-            title: 'Education updated',
-            description: 'Your education entry has been updated successfully.',
-          });
-          setEditingId(null);
-        } else {
-          toast({
-            title: 'Update failed',
-            description: response.error?.message || 'Failed to update education',
-            variant: 'destructive',
-          });
-        }
+        const updatedEntries = entries.map(e => e.id === editingId ? { ...formData, id: editingId } : e);
+        await updateProfileField('education', updatedEntries);
+        await fetchEducation();
+        await refreshProfile();
+        toast.success('Education entry updated successfully');
+        setEditingId(null);
       } else {
-        const response = await api.addEducation(formData);
-        if (response.success) {
-          await fetchEducation();
-          await refreshProfile();
-          toast({
-            title: 'Education added',
-            description: 'Your education entry has been added successfully.',
-          });
-        } else {
-          toast({
-            title: 'Add failed',
-            description: response.error?.message || 'Failed to add education',
-            variant: 'destructive',
-          });
-        }
+        const newEntry = { ...formData, id: crypto.randomUUID() };
+        await updateProfileField('education', [...entries, newEntry]);
+        await fetchEducation();
+        await refreshProfile();
+        toast.success('Education entry added successfully');
       }
 
       resetForm();
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred',
-        variant: 'destructive',
-      });
+      toast.error('An unexpected error occurred');
     } finally {
       setIsSaving(false);
     }
@@ -158,22 +133,13 @@ export const EducationManagement = () => {
 
   const handleDelete = async () => {
     if (!deleteId) return;
-
-    const response = await api.deleteEducation(deleteId);
-    if (response.success) {
-      await fetchEducation();
-      await refreshProfile();
-      toast({
-        title: 'Education deleted',
-        description: 'The entry has been removed from your profile.',
-      });
-    } else {
-      toast({
-        title: 'Delete failed',
-        description: response.error?.message || 'Failed to delete education',
-        variant: 'destructive',
-      });
-    }
+    
+    const updatedEntries = entries.filter(e => e.id !== deleteId);
+    await updateProfileField('education', updatedEntries);
+    await fetchEducation();
+    await refreshProfile();
+    toast.success('Education entry removed from your profile');
+    
     setDeleteId(null);
   };
 

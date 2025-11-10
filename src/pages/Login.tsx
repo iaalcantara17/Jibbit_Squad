@@ -4,16 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Navigation } from '@/components/Navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Github, Linkedin, Apple } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, loginWithToken } = useAuth();
-  const { toast } = useToast();
+  const { login, user } = useAuth();
   const [searchParams] = useSearchParams();
   
   const [formData, setFormData] = useState({
@@ -22,53 +22,31 @@ const Login = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
 
-  // Handle OAuth token from URL parameter
+  // Redirect if already logged in
   useEffect(() => {
-    const token = searchParams.get('token');
-    if (token) {
-      handleOAuthToken(token);
+    if (user) {
+      navigate('/dashboard');
     }
-  }, [searchParams]);
+  }, [user, navigate]);
 
-  const handleOAuthToken = async (token: string) => {
+  const handleOAuthLogin = async (provider: 'google' | 'azure' | 'linkedin_oidc' | 'github' | 'apple') => {
     setIsLoading(true);
     try {
-      // Use the loginWithToken function to properly update AuthContext
-      const result = await loginWithToken(token);
-      
-      if (result.success) {
-        toast({
-          title: 'Welcome!',
-          description: 'You have successfully logged in via OAuth.',
-        });
-        
-        // Redirect to dashboard
-        navigate('/dashboard');
-      } else {
-        throw new Error(result.error);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+
+      if (error) {
+        toast.error(`Failed to sign in with ${provider}: ${error.message}`);
       }
     } catch (error) {
-      toast({
-        title: 'Authentication failed',
-        description: 'Invalid or expired OAuth token.',
-        variant: 'destructive',
-      });
+      toast.error('An unexpected error occurred');
+      console.error('OAuth error:', error);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleOAuthLogin = (provider: string) => {
-    if (provider === 'Google') {
-      // Redirect to backend Google OAuth endpoint
-      window.location.href = 'https://api.jibbit.app/api/auth/google';
-    } else {
-      // Other providers not yet configured
-      toast({
-        title: 'OAuth Not Configured',
-        description: `${provider} authentication will be available once the backend is configured.`,
-        variant: 'default',
-      });
     }
   };
 
@@ -80,19 +58,12 @@ const Login = () => {
     setIsLoading(false);
 
     if (result.success) {
-      toast({
-        title: 'Welcome back!',
-        description: 'You have successfully logged in.',
-      });
+      toast.success('Welcome back!');
       navigate('/dashboard');
     } else {
       // Clear password field on failed login
       setFormData({ ...formData, password: '' });
-      toast({
-        title: 'Login failed',
-        description: result.error,
-        variant: 'destructive',
-      });
+      toast.error(result.error || 'Login failed');
     }
   };
 
@@ -112,7 +83,8 @@ const Login = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => handleOAuthLogin('Google')}
+                  onClick={() => handleOAuthLogin('google')}
+                  disabled={isLoading}
                   className="w-full"
                 >
                   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -126,7 +98,8 @@ const Login = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => handleOAuthLogin('Microsoft')}
+                  onClick={() => handleOAuthLogin('azure')}
+                  disabled={isLoading}
                   className="w-full"
                 >
                   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
@@ -140,7 +113,8 @@ const Login = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => handleOAuthLogin('LinkedIn')}
+                  onClick={() => handleOAuthLogin('linkedin_oidc')}
+                  disabled={isLoading}
                   className="w-full"
                 >
                   <Linkedin className="h-4 w-4" />
@@ -148,7 +122,8 @@ const Login = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => handleOAuthLogin('GitHub')}
+                  onClick={() => handleOAuthLogin('github')}
+                  disabled={isLoading}
                   className="w-full"
                 >
                   <Github className="h-4 w-4" />
@@ -156,7 +131,8 @@ const Login = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => handleOAuthLogin('Apple')}
+                  onClick={() => handleOAuthLogin('apple')}
+                  disabled={isLoading}
                   className="w-full"
                 >
                   <Apple className="h-4 w-4" />

@@ -8,8 +8,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Plus, Edit, Trash2, Award, Calendar, Building2, FileText, ExternalLink, Loader2 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
-import { api } from '@/lib/api';
+import { toast } from 'sonner';
+import { useProfileData } from './ProfileDataManager';
 
 interface Certification {
   id: string;
@@ -23,7 +23,8 @@ interface Certification {
 }
 
 export const CertificationsManagement = () => {
-  const { refreshProfile } = useAuth();
+  const { refreshProfile, profile } = useAuth();
+  const { updateProfileField } = useProfileData();
   const [certifications, setCertifications] = useState<Certification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
@@ -49,10 +50,8 @@ export const CertificationsManagement = () => {
 
   const fetchCertifications = async () => {
     setIsLoading(true);
-    const response = await api.getCertifications();
-    if (response.success && response.data) {
-      setCertifications(response.data);
-    }
+    const certs = (profile?.certifications || []) as Certification[];
+    setCertifications(certs);
     setIsLoading(false);
   };
 
@@ -86,47 +85,23 @@ export const CertificationsManagement = () => {
 
     try {
       if (editingId) {
-        const response = await api.updateCertification(editingId, formData);
-        if (response.success) {
-          await fetchCertifications();
-          await refreshProfile();
-          toast({
-            title: 'Certification updated',
-            description: 'Your certification has been updated successfully.',
-          });
-          setEditingId(null);
-        } else {
-          toast({
-            title: 'Update failed',
-            description: response.error?.message || 'Failed to update certification',
-            variant: 'destructive',
-          });
-        }
+        const updatedCerts = certifications.map(c => c.id === editingId ? { ...formData, id: editingId } : c);
+        await updateProfileField('certifications', updatedCerts);
+        await fetchCertifications();
+        await refreshProfile();
+        toast.success('Certification updated successfully');
+        setEditingId(null);
       } else {
-        const response = await api.addCertification(formData);
-        if (response.success) {
-          await fetchCertifications();
-          await refreshProfile();
-          toast({
-            title: 'Certification added',
-            description: 'Your certification has been added successfully.',
-          });
-        } else {
-          toast({
-            title: 'Add failed',
-            description: response.error?.message || 'Failed to add certification',
-            variant: 'destructive',
-          });
-        }
+        const newCert = { ...formData, id: crypto.randomUUID() };
+        await updateProfileField('certifications', [...certifications, newCert]);
+        await fetchCertifications();
+        await refreshProfile();
+        toast.success('Certification added successfully');
       }
 
       resetForm();
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred',
-        variant: 'destructive',
-      });
+      toast.error('An unexpected error occurred');
     } finally {
       setIsSaving(false);
     }
@@ -148,22 +123,13 @@ export const CertificationsManagement = () => {
 
   const handleDelete = async () => {
     if (!deleteId) return;
-
-    const response = await api.deleteCertification(deleteId);
-    if (response.success) {
-      await fetchCertifications();
-      await refreshProfile();
-      toast({
-        title: 'Certification deleted',
-        description: 'The certification has been removed from your profile.',
-      });
-    } else {
-      toast({
-        title: 'Delete failed',
-        description: response.error?.message || 'Failed to delete certification',
-        variant: 'destructive',
-      });
-    }
+    
+    const updatedCerts = certifications.filter(c => c.id !== deleteId);
+    await updateProfileField('certifications', updatedCerts);
+    await fetchCertifications();
+    await refreshProfile();
+    toast.success('Certification removed from your profile');
+    
     setDeleteId(null);
   };
 

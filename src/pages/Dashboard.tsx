@@ -1,7 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigation } from '@/components/Navigation';
 import { InfoCard } from '@/components/ui/info-card';
-import { User, Briefcase, GraduationCap, FolderOpen } from 'lucide-react';
+import { User, Briefcase, GraduationCap, FolderOpen, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
@@ -14,9 +14,17 @@ const Dashboard = () => {
         <div className="max-w-6xl mx-auto space-y-8">
           <div>
             <h1 className="text-4xl font-display font-bold">Dashboard</h1>
-            <p className="text-muted-foreground mt-2 text-lg">Welcome back, {user?.name || user?.email}</p>
+            <p className="text-muted-foreground mt-2 text-lg">Welcome back, {user?.email}</p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <Link to="/jobs">
+              <InfoCard
+                icon={Target}
+                title="Job Tracker"
+                description="Manage and track your job applications"
+                className="hover-scale cursor-pointer"
+              />
+            </Link>
             <Link to="/profile">
               <InfoCard
                 icon={User}

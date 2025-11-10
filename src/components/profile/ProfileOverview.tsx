@@ -17,7 +17,7 @@ interface ProfileSection {
 }
 
 export const ProfileOverview = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [, setSearchParams] = useSearchParams();
 
   const navigateToSection = (section: string) => {
@@ -25,22 +25,20 @@ export const ProfileOverview = () => {
   };
 
   const calculateSectionCompletion = (): ProfileSection[] => {
-    const basicFields = ['Name', 'Phone', 'Location', 'Headline', 'Bio', 'Industry', 'Experience Level'];
+    const basicFields = ['Name', 'Phone', 'Location', 'Headline', 'Bio'];
     const basicCompleted = [
-      user?.name,
-      user?.basicInfo?.phoneNumber,
-      user?.basicInfo?.location,
-      user?.basicInfo?.professionalHeadline,
-      user?.basicInfo?.bio,
-      user?.basicInfo?.industry,
-      user?.basicInfo?.experienceLevel,
+      profile?.name,
+      profile?.phone_number,
+      profile?.location,
+      profile?.professional_headline,
+      profile?.bio,
     ].filter(Boolean);
 
-    const hasEmployment = user?.employmentHistory && user.employmentHistory.length > 0;
-    const hasSkills = user?.skills && user.skills.length > 0;
-    const hasEducation = user?.education && user.education.length > 0;
-    const hasCertifications = user?.certifications && user.certifications.length > 0;
-    const hasProjects = user?.projects && user.projects.length > 0;
+    const hasEmployment = profile?.employment_history && profile.employment_history.length > 0;
+    const hasSkills = profile?.skills && profile.skills.length > 0;
+    const hasEducation = profile?.education && profile.education.length > 0;
+    const hasCertifications = profile?.certifications && profile.certifications.length > 0;
+    const hasProjects = profile?.projects && profile.projects.length > 0;
 
     return [
       {
@@ -99,17 +97,17 @@ export const ProfileOverview = () => {
 PROFESSIONAL PROFILE SUMMARY
 ============================
 
-Name: ${user?.name}
-Email: ${user?.email}
-Phone: ${user?.basicInfo?.phoneNumber || 'N/A'}
-Location: ${user?.basicInfo?.location || 'N/A'}
-Headline: ${user?.basicInfo?.professionalHeadline || 'N/A'}
+Name: ${profile?.name}
+Email: ${profile?.email}
+Phone: ${profile?.phone_number || 'N/A'}
+Location: ${profile?.location || 'N/A'}
+Headline: ${profile?.professional_headline || 'N/A'}
 
-SKILLS: ${user?.skills?.length || 0} total
-EMPLOYMENT: ${user?.employmentHistory?.length || 0} positions
-EDUCATION: ${user?.education?.length || 0} degrees
-CERTIFICATIONS: ${user?.certifications?.length || 0} certifications
-PROJECTS: ${user?.projects?.length || 0} projects
+SKILLS: ${profile?.skills?.length || 0} total
+EMPLOYMENT: ${profile?.employment_history?.length || 0} positions
+EDUCATION: ${profile?.education?.length || 0} degrees
+CERTIFICATIONS: ${profile?.certifications?.length || 0} certifications
+PROJECTS: ${profile?.projects?.length || 0} projects
 
 Generated on ${new Date().toLocaleDateString()}
     `;
@@ -133,10 +131,10 @@ Generated on ${new Date().toLocaleDateString()}
 
   // Skills distribution data for chart
   const skillsData = [
-    { name: 'Technical', value: user?.skills?.filter(s => s.category === 'Technical').length || 0 },
-    { name: 'Soft Skills', value: user?.skills?.filter(s => s.category === 'Soft Skills').length || 0 },
-    { name: 'Languages', value: user?.skills?.filter(s => s.category === 'Languages').length || 0 },
-    { name: 'Industry', value: user?.skills?.filter(s => s.category === 'Industry-Specific').length || 0 },
+    { name: 'Technical', value: profile?.skills?.filter((s: any) => s.category === 'Technical').length || 0 },
+    { name: 'Soft Skills', value: profile?.skills?.filter((s: any) => s.category === 'Soft Skills').length || 0 },
+    { name: 'Languages', value: profile?.skills?.filter((s: any) => s.category === 'Languages').length || 0 },
+    { name: 'Industry', value: profile?.skills?.filter((s: any) => s.category === 'Industry-Specific').length || 0 },
   ].filter(item => item.value > 0);
 
   const COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b'];
@@ -179,7 +177,7 @@ Generated on ${new Date().toLocaleDateString()}
       id: 'skilled',
       name: 'Skilled Professional',
       description: 'Add 10+ skills',
-      unlocked: (user?.skills?.length || 0) >= 10,
+      unlocked: (profile?.skills?.length || 0) >= 10,
       icon: Target,
       color: 'text-purple-500',
     },
@@ -187,7 +185,7 @@ Generated on ${new Date().toLocaleDateString()}
       id: 'experienced',
       name: 'Experienced Professional',
       description: 'Add 3+ employment entries',
-      unlocked: (user?.employmentHistory?.length || 0) >= 3,
+      unlocked: (profile?.employment_history?.length || 0) >= 3,
       icon: Briefcase,
       color: 'text-green-500',
     },
@@ -203,11 +201,11 @@ Generated on ${new Date().toLocaleDateString()}
   };
 
   const userMetrics = {
-    skills: user?.skills?.length || 0,
-    employment: user?.employmentHistory?.length || 0,
-    education: user?.education?.length || 0,
-    projects: user?.projects?.length || 0,
-    certifications: user?.certifications?.length || 0,
+    skills: profile?.skills?.length || 0,
+    employment: profile?.employment_history?.length || 0,
+    education: profile?.education?.length || 0,
+    projects: profile?.projects?.length || 0,
+    certifications: profile?.certifications?.length || 0,
   };
 
   const comparisonData = [
@@ -245,25 +243,25 @@ Generated on ${new Date().toLocaleDateString()}
 
   // Recent activity timeline
   const recentActivity = [
-    ...(user?.employmentHistory?.slice(0, 2).map(job => ({
+    ...(profile?.employment_history?.slice(0, 2).map((job: any) => ({
       type: 'employment',
       icon: Briefcase,
-      title: `Added ${job.title} at ${job.company}`,
+      title: `Added ${job.jobTitle} at ${job.company}`,
       date: new Date(job.startDate),
     })) || []),
-    ...(user?.education?.slice(0, 2).map(edu => ({
+    ...(profile?.education?.slice(0, 2).map((edu: any) => ({
       type: 'education',
       icon: GraduationCap,
       title: `Added ${edu.degree} from ${edu.institution}`,
       date: new Date(edu.graduationDate || edu.startDate),
     })) || []),
-    ...(user?.skills?.slice(0, 3).map(() => ({
+    ...(profile?.skills?.slice(0, 3).map(() => ({
       type: 'skills',
       icon: Code,
       title: 'Added new skills',
       date: new Date(),
     })) || []),
-    ...(user?.projects?.slice(0, 2).map(project => ({
+    ...(profile?.projects?.slice(0, 2).map((project: any) => ({
       type: 'project',
       icon: FolderKanban,
       title: `Added project: ${project.name}`,
@@ -274,8 +272,8 @@ Generated on ${new Date().toLocaleDateString()}
     .slice(0, 5);
 
   // Career timeline - chronological employment history
-  const careerTimeline = [...(user?.employmentHistory || [])]
-    .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
+  const careerTimeline = [...(profile?.employment_history || [])]
+    .sort((a: any, b: any) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
     .slice(0, 5);
 
   return (

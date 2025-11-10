@@ -1,19 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Navigation } from '@/components/Navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Github, Linkedin, Apple } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Register = () => {
   const navigate = useNavigate();
-  const { register } = useAuth();
-  const { toast } = useToast();
+  const { register, user } = useAuth();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -24,17 +24,31 @@ const Register = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleOAuthSignup = (provider: string) => {
-    if (provider === 'Google') {
-      // Redirect to backend Google OAuth endpoint
-      window.location.href = 'https://api.jibbit.app/api/auth/google';
-    } else {
-      // Other providers not yet configured
-      toast({
-        title: 'OAuth Not Configured',
-        description: `${provider} authentication will be available once the backend is configured.`,
-        variant: 'default',
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
+
+  const handleOAuthSignup = async (provider: 'google' | 'azure' | 'linkedin_oidc' | 'github' | 'apple') => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
       });
+
+      if (error) {
+        toast.error(`Failed to sign up with ${provider}: ${error.message}`);
+      }
+    } catch (error) {
+      toast.error('An unexpected error occurred');
+      console.error('OAuth error:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -77,17 +91,10 @@ const Register = () => {
     setIsLoading(false);
 
     if (result.success) {
-      toast({
-        title: 'Success',
-        description: 'Account created successfully!',
-      });
+      toast.success('Account created successfully!');
       navigate('/dashboard');
     } else {
-      toast({
-        title: 'Registration failed',
-        description: result.error,
-        variant: 'destructive',
-      });
+      toast.error(result.error || 'Registration failed');
     }
   };
 
@@ -107,7 +114,8 @@ const Register = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => handleOAuthSignup('Google')}
+                  onClick={() => handleOAuthSignup('google')}
+                  disabled={isLoading}
                   className="w-full"
                 >
                   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -121,7 +129,8 @@ const Register = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => handleOAuthSignup('Microsoft')}
+                  onClick={() => handleOAuthSignup('azure')}
+                  disabled={isLoading}
                   className="w-full"
                 >
                   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
@@ -135,7 +144,8 @@ const Register = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => handleOAuthSignup('LinkedIn')}
+                  onClick={() => handleOAuthSignup('linkedin_oidc')}
+                  disabled={isLoading}
                   className="w-full"
                 >
                   <Linkedin className="h-4 w-4" />
@@ -143,7 +153,8 @@ const Register = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => handleOAuthSignup('GitHub')}
+                  onClick={() => handleOAuthSignup('github')}
+                  disabled={isLoading}
                   className="w-full"
                 >
                   <Github className="h-4 w-4" />
@@ -151,7 +162,8 @@ const Register = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => handleOAuthSignup('Apple')}
+                  onClick={() => handleOAuthSignup('apple')}
+                  disabled={isLoading}
                   className="w-full"
                 >
                   <Apple className="h-4 w-4" />

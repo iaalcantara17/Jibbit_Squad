@@ -3,9 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { api } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { Navigation } from '@/components/Navigation';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const ResetPassword = () => {
@@ -42,31 +42,27 @@ const ResetPassword = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm() || !token) return;
+    if (!validateForm()) return;
 
     setIsLoading(true);
-    const response = await api.resetPassword(token, formData.password);
+    const { error } = await supabase.auth.updateUser({
+      password: formData.password
+    });
     setIsLoading(false);
 
-    if (response.success) {
+    if (!error) {
       toast({
         title: 'Success',
-        description: 'Your password has been reset successfully. Logging you in...',
+        description: 'Your password has been reset successfully.',
       });
       
-      // Extract email from the token or get from backend response
-      // For now, navigate to login with a flag, or implement auto-login via backend
-      // The backend should return a new token after password reset
-      
-      // Since backend doesn't return token after reset, we need to auto-login
-      // Navigate to login page with success message
       setTimeout(() => {
-        navigate('/login', { state: { resetSuccess: true } });
+        navigate('/login');
       }, 1500);
     } else {
       toast({
         title: 'Error',
-        description: response.error?.message || 'Failed to reset password',
+        description: error.message || 'Failed to reset password',
         variant: 'destructive',
       });
     }

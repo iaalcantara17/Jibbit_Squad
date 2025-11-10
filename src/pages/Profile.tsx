@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const Profile = () => {
-  const { user, refreshProfile, deleteAccount } = useAuth();
+  const { user, profile: userProfile, refreshProfile, deleteAccount } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -51,7 +51,7 @@ const Profile = () => {
   
   const [basicInfo, setBasicInfo] = useState({
     id: '',
-    name: user?.name || '',
+    name: '',
     email: user?.email || '',
     phoneNumber: '',
     location: '',
@@ -63,62 +63,23 @@ const Profile = () => {
 
   useEffect(() => {
     const loadBasicInfo = async () => {
-      if (user) {
-        // Fetch basic info from the backend
-        const response = await api.getBasicInfo();
-        
-        if (response.success) {
-          const payload = response.data as any;
-          const info = Array.isArray(payload)
-            ? (payload[0] ?? null)
-            : (payload && typeof payload === 'object' ? payload : null);
-
-          if (info) {
-            setBasicInfo({
-              id: info.id || '',
-              name: user.name || '',
-              email: user.email || '',
-              phoneNumber: info.phoneNumber || '',
-              location: info.location || '',
-              professionalHeadline: info.professionalHeadline || '',
-              bio: info.bio || '',
-              industry: info.industry || '',
-              experienceLevel: info.experienceLevel || '',
-            });
-          } else {
-            setBasicInfo({
-              id: '',
-              name: user.name || '',
-              email: user.email || '',
-              phoneNumber: '',
-              location: '',
-              professionalHeadline: '',
-              bio: '',
-              industry: '',
-              experienceLevel: '',
-            });
-          }
-        } else {
-          // On error, keep defaults from user
-          setBasicInfo((prev) => ({
-            ...prev,
-            name: user.name || '',
-            email: user.email || '',
-          }));
-        }
-        
-        // Check if user is OAuth
-        if (user.email) {
-          const providerResponse = await api.checkProvider(user.email);
-          if (providerResponse.success && providerResponse.data) {
-            setIsOAuthUser(providerResponse.data.provider !== 'local');
-          }
-        }
+      if (user && userProfile) {
+        setBasicInfo({
+          id: userProfile?.id || '',
+          name: userProfile?.name || user.email || '',
+          email: user.email || '',
+          phoneNumber: userProfile?.phone_number || '',
+          location: userProfile?.location || '',
+          professionalHeadline: userProfile?.professional_headline || '',
+          bio: userProfile?.bio || '',
+          industry: '',
+          experienceLevel: '',
+        });
       }
     };
     
     loadBasicInfo();
-  }, [user]);
+  }, [user, userProfile]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -279,80 +240,21 @@ const Profile = () => {
     setIsSaving(true);
 
     try {
-      // 1) Update name only if it actually changed and is non-empty
-      const trimmedName = basicInfo.name?.trim() || '';
-      const currentName = (user?.name || '').trim();
-      let nameUpdated = false;
+        const updateData = {
+          name: basicInfo.name?.trim() || userProfile?.name,
+          phone_number: basicInfo.phoneNumber?.trim(),
+          location: basicInfo.location?.trim(),
+          professional_headline: basicInfo.professionalHeadline?.trim(),
+          bio: basicInfo.bio?.trim(),
+        };
 
-      if (trimmedName && trimmedName !== currentName) {
-        const nameUpdateResponse = await api.updateProfile({ name: trimmedName });
-        if (!nameUpdateResponse.success) {
-          // Don't abort the whole save – inform the user but continue with basic info
-          toast({
-            title: 'Name not updated',
-            description: nameUpdateResponse.error?.message || 'We could not update your name right now.',
-            variant: 'destructive',
-          });
-        } else {
-          nameUpdated = true;
-        }
-      }
-
-      // 2) Build a partial payload: only send fields that are non-empty to allow true partial updates
-      const fields = {
-        phoneNumber: basicInfo.phoneNumber?.trim() || '',
-        location: basicInfo.location?.trim() || '',
-        professionalHeadline: basicInfo.professionalHeadline?.trim() || '',
-        bio: basicInfo.bio?.trim() || '',
-        industry: basicInfo.industry?.trim() || '',
-        experienceLevel: basicInfo.experienceLevel?.trim() || '',
-      } as const;
-
-      const partialPayload: Record<string, string> = {};
-      (Object.keys(fields) as Array<keyof typeof fields>).forEach((k) => {
-        const v = fields[k];
-        if (v) partialPayload[k] = v; // only include non-empty values
+      await api.profile.update(updateData);
+      await refreshProfile();
+      
+      toast({
+        title: 'Profile updated',
+        description: 'Your basic information has been saved successfully.',
       });
-
-      let basicUpdated = false;
-      let updatedData: any = null;
-
-      if (Object.keys(partialPayload).length > 0) {
-        const response = await api.createBasicInfo(partialPayload);
-        if (response.success && response.data) {
-          basicUpdated = true;
-          updatedData = response.data;
-
-          // Merge response back into local state (preserve existing values if API omits them)
-          setBasicInfo((prev) => ({
-            id: updatedData.id || prev.id,
-            name: trimmedName || prev.name,
-            email: prev.email,
-            phoneNumber: updatedData.phoneNumber ?? prev.phoneNumber,
-            location: updatedData.location ?? prev.location,
-            professionalHeadline: updatedData.professionalHeadline ?? prev.professionalHeadline,
-            bio: updatedData.bio ?? prev.bio,
-            industry: updatedData.industry ?? prev.industry,
-            experienceLevel: updatedData.experienceLevel ?? prev.experienceLevel,
-          }));
-        } else {
-          toast({
-            title: 'Update failed',
-            description: response.error?.message || 'Failed to update profile',
-            variant: 'destructive',
-          });
-        }
-      } else if (nameUpdated) {
-        // Only the name changed – reflect it locally
-        setBasicInfo((prev) => ({ ...prev, name: trimmedName }));
-      }
-
-      if (nameUpdated || basicUpdated) {
-        toast({
-          title: 'Profile updated',
-          description: 'Your basic information has been saved successfully.',
-        });
-      }
     } catch (error) {
       console.error('❌ Exception during profile update:', error);
       toast({
@@ -439,10 +341,7 @@ const Profile = () => {
                   <div className="flex flex-col sm:flex-row items-center gap-6">
                     <div className="relative">
                       <Avatar className="h-32 w-32">
-                        <AvatarImage src={profilePicture || undefined} alt={user?.name} />
-                        <AvatarFallback className="text-3xl bg-primary/10 text-primary">
-                          {user?.name?.charAt(0).toUpperCase() || 'U'}
-                        </AvatarFallback>
+                          {userProfile?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
                       </Avatar>
                       {profilePicture && (
                         <Button

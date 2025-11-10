@@ -1,10 +1,11 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { Menu, X, LogOut, User } from 'lucide-react';
+import { Menu, X, LogOut, User, Target, FileText, Mail, BarChart } from 'lucide-react';
 import { useState } from 'react';
 import logo from '@/assets/logo.png';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 
 export const Navigation = () => {
   const { user, logout } = useAuth();
@@ -41,6 +42,42 @@ export const Navigation = () => {
                 Dashboard
               </Link>
               <Link
+                to="/jobs"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  isActive('/jobs') ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                <Target className="inline h-4 w-4 mr-1" />
+                Jobs
+              </Link>
+              <Link
+                to="/resumes"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  isActive('/resumes') ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                <FileText className="inline h-4 w-4 mr-1" />
+                Resumes
+              </Link>
+              <Link
+                to="/cover-letters"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  isActive('/cover-letters') ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                <Mail className="inline h-4 w-4 mr-1" />
+                Cover Letters
+              </Link>
+              <Link
+                to="/analytics"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  isActive('/analytics') ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                <BarChart className="inline h-4 w-4 mr-1" />
+                Analytics
+              </Link>
+              <Link
                 to="/profile"
                 className={`text-sm font-medium transition-colors hover:text-primary ${
                   isActive('/profile') ? 'text-primary' : 'text-muted-foreground'
@@ -49,6 +86,7 @@ export const Navigation = () => {
                 <User className="inline h-4 w-4 mr-1" />
                 Profile
               </Link>
+              <NotificationCenter />
               <ThemeToggle />
               <Button variant="ghost" size="sm" onClick={handleLogout}>
                 <LogOut className="h-4 w-4 mr-2" />
@@ -98,6 +136,54 @@ export const Navigation = () => {
                   }`}
                 >
                   Dashboard
+                </Link>
+                <Link
+                  to="/jobs"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/jobs')
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <Target className="inline h-4 w-4 mr-1" />
+                  Jobs
+                </Link>
+                <Link
+                  to="/resumes"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/resumes')
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <FileText className="inline h-4 w-4 mr-1" />
+                  Resumes
+                </Link>
+                <Link
+                  to="/cover-letters"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/cover-letters')
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <Mail className="inline h-4 w-4 mr-1" />
+                  Cover Letters
+                </Link>
+                <Link
+                  to="/analytics"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/analytics')
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <BarChart className="inline h-4 w-4 mr-1" />
+                  Analytics
                 </Link>
                 <Link
                   to="/profile"
