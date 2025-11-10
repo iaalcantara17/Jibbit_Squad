@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,9 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Sparkles, Download, Eye, Save, Plus, Trash2 } from 'lucide-react';
+import { Sparkles, Download, Eye, Save, Plus, Trash2, FileText } from 'lucide-react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
+import { AIResultsPanel } from './AIResultsPanel';
+import { useExport } from '@/hooks/useExport';
 
 interface ResumeBuilderProps {
   resumeId?: string;
@@ -33,6 +35,22 @@ export function ResumeBuilder({ resumeId, onSave }: ResumeBuilderProps) {
   const [jobs, setJobs] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showAIDialog, setShowAIDialog] = useState(false);
+  const [aiResult, setAiResult] = useState<any>(null);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const { exportResumeToPDF, exportResumeToWord, exportResumeToText } = useExport();
+
+  useEffect(() => {
+    loadJobs();
+  }, []);
+
+  const loadJobs = async () => {
+    try {
+      const jobsData = await api.jobs.getAll();
+      setJobs(jobsData);
+    } catch (error) {
+      console.error('Error loading jobs:', error);
+    }
+  };
 
   const handleGenerateContent = async () => {
     if (!selectedJob) {
@@ -48,12 +66,17 @@ export function ResumeBuilder({ resumeId, onSave }: ResumeBuilderProps) {
         ['summary', 'experience', 'skills']
       );
       
+      setAiResult({ type: 'content', data: result });
       toast.success('AI content generated successfully!');
       setShowAIDialog(false);
-      // Update sections with generated content
-      // This would need proper implementation based on the response structure
-    } catch (error) {
-      toast.error('Failed to generate content');
+    } catch (error: any) {
+      if (error.message?.includes('Rate limit')) {
+        toast.error("Rate limit exceeded. Please try again later.");
+      } else if (error.message?.includes('credits')) {
+        toast.error("AI credits exhausted. Please add credits to continue.");
+      } else {
+        toast.error('Failed to generate content');
+      }
       console.error('Error:', error);
     } finally {
       setIsGenerating(false);
@@ -69,11 +92,16 @@ export function ResumeBuilder({ resumeId, onSave }: ResumeBuilderProps) {
     setIsGenerating(true);
     try {
       const result = await api.resumes.optimizeSkills(selectedJob);
+      setAiResult({ type: 'skills', data: result });
       toast.success('Skills optimized!');
-      // Display optimization results
-      console.log('Optimized skills:', result);
-    } catch (error) {
-      toast.error('Failed to optimize skills');
+    } catch (error: any) {
+      if (error.message?.includes('Rate limit')) {
+        toast.error("Rate limit exceeded. Please try again later.");
+      } else if (error.message?.includes('credits')) {
+        toast.error("AI credits exhausted. Please add credits to continue.");
+      } else {
+        toast.error('Failed to optimize skills');
+      }
       console.error('Error:', error);
     } finally {
       setIsGenerating(false);
@@ -89,14 +117,77 @@ export function ResumeBuilder({ resumeId, onSave }: ResumeBuilderProps) {
     setIsGenerating(true);
     try {
       const result = await api.resumes.tailorExperience(selectedJob);
+      setAiResult({ type: 'experience', data: result });
       toast.success('Experience tailored!');
-      // Display tailored experience
-      console.log('Tailored experience:', result);
-    } catch (error) {
-      toast.error('Failed to tailor experience');
+    } catch (error: any) {
+      if (error.message?.includes('Rate limit')) {
+        toast.error("Rate limit exceeded. Please try again later.");
+      } else if (error.message?.includes('credits')) {
+        toast.error("AI credits exhausted. Please add credits to continue.");
+      } else {
+        toast.error('Failed to tailor experience');
+      }
       console.error('Error:', error);
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleApplyAIResult = (data: any) => {
+    // Apply the AI suggestions to the resume sections
+    if (aiResult?.type === 'content') {
+      // Merge AI content into existing sections
+      const updatedSections = [...sections];
+      if (data.summary) {
+        const summaryIdx = updatedSections.findIndex(s => s.type === 'summary');
+        if (summaryIdx >= 0) {
+          updatedSections[summaryIdx].content = data.summary.suggestions?.[0] || updatedSections[summaryIdx].content;
+        } else {
+          updatedSections.unshift({ type: 'summary', title: 'Summary', content: data.summary.suggestions?.[0] || '', isVisible: true });
+        }
+      }
+      setSections(updatedSections);
+    } else if (aiResult?.type === 'skills') {
+      // Update skills section
+      const updatedSections = [...sections];
+      const skillsIdx = updatedSections.findIndex(s => s.type === 'skills');
+      const skillsContent = data.optimized?.map((s: any) => s.name).join(', ') || '';
+      if (skillsIdx >= 0) {
+        updatedSections[skillsIdx].content = skillsContent;
+      } else {
+        updatedSections.push({ type: 'skills', title: 'Skills', content: skillsContent, isVisible: true });
+      }
+      setSections(updatedSections);
+    } else if (aiResult?.type === 'experience') {
+      // Update experience section
+      const updatedSections = [...sections];
+      const expIdx = updatedSections.findIndex(s => s.type === 'experience');
+      const expContent = data.tailored?.map((e: any) => 
+        `${e.role} at ${e.company}\n${e.descriptions?.join('\n• ') || ''}`
+      ).join('\n\n') || '';
+      if (expIdx >= 0) {
+        updatedSections[expIdx].content = expContent;
+      } else {
+        updatedSections.push({ type: 'experience', title: 'Experience', content: expContent, isVisible: true });
+      }
+      setSections(updatedSections);
+    }
+    setAiResult(null);
+  };
+
+  const handleExport = async (format: 'pdf' | 'docx' | 'txt') => {
+    const resumeData = { id: resumeId, title, template, sections };
+    try {
+      if (format === 'pdf') {
+        await exportResumeToPDF(resumeData);
+      } else if (format === 'docx') {
+        await exportResumeToWord(resumeData);
+      } else {
+        exportResumeToText(resumeData);
+      }
+      toast.success(`Resume exported as ${format.toUpperCase()}`);
+    } catch (error) {
+      toast.error(`Failed to export as ${format.toUpperCase()}`);
     }
   };
 
@@ -117,6 +208,15 @@ export function ResumeBuilder({ resumeId, onSave }: ResumeBuilderProps) {
 
   return (
     <div className="space-y-6">
+      {/* AI Results Panel */}
+      {aiResult && (
+        <AIResultsPanel
+          result={aiResult}
+          onApply={handleApplyAIResult}
+          onDismiss={() => setAiResult(null)}
+        />
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Resume Builder</CardTitle>
@@ -213,13 +313,9 @@ export function ResumeBuilder({ resumeId, onSave }: ResumeBuilderProps) {
           {/* Actions */}
           <div className="flex justify-between items-center border-t pt-4">
             <div className="flex gap-2">
-              <Button variant="outline">
-                <Eye className="h-4 w-4 mr-2" />
-                Preview
-              </Button>
-              <Button variant="outline">
+              <Button variant="outline" onClick={() => setShowExportDialog(true)}>
                 <Download className="h-4 w-4 mr-2" />
-                Export PDF
+                Export
               </Button>
             </div>
             <Button onClick={handleSave}>
@@ -268,6 +364,53 @@ export function ResumeBuilder({ resumeId, onSave }: ResumeBuilderProps) {
                   Generate Content
                 </>
               )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Export Dialog */}
+      <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Export Resume</DialogTitle>
+            <DialogDescription>
+              Choose the format for exporting your resume
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-3 gap-4">
+            <Button
+              variant="outline"
+              className="h-24 flex flex-col items-center justify-center gap-2"
+              onClick={() => {
+                handleExport('pdf');
+                setShowExportDialog(false);
+              }}
+            >
+              <FileText className="h-8 w-8" />
+              <span>PDF</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-24 flex flex-col items-center justify-center gap-2"
+              onClick={() => {
+                handleExport('docx');
+                setShowExportDialog(false);
+              }}
+            >
+              <FileText className="h-8 w-8" />
+              <span>Word</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-24 flex flex-col items-center justify-center gap-2"
+              onClick={() => {
+                handleExport('txt');
+                setShowExportDialog(false);
+              }}
+            >
+              <FileText className="h-8 w-8" />
+              <span>Text</span>
             </Button>
           </div>
         </DialogContent>

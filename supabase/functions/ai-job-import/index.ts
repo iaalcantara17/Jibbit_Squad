@@ -31,45 +31,55 @@ serve(async (req) => {
 
     const { url } = await req.json();
 
-    if (!url) {
-      return new Response(JSON.stringify({ error: 'URL is required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    console.log('Fetching job posting from URL:', url);
 
-    // Fetch the job posting page
-    const pageResponse = await fetch(url, {
+    // Fetch with proper headers to mimic browser behavior
+    const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
       },
     });
 
-    if (!pageResponse.ok) {
-      return new Response(JSON.stringify({ error: 'Failed to fetch job posting' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    if (!response.ok) {
+      console.error('Failed to fetch URL:', response.status, response.statusText);
+      throw new Error(`Failed to fetch URL: ${response.statusText}`);
     }
 
-    const html = await pageResponse.text();
+    const html = await response.text();
+    console.log('Fetched HTML content length:', html.length);
 
-    // Use AI to extract structured job data from HTML
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    const prompt = `Extract structured job information from this HTML content. Return a JSON object with these fields:
-    - job_title (string)
-    - company_name (string)
-    - location (string)
-    - job_description (string, max 2000 chars)
-    - salary_min (number, if available)
-    - salary_max (number, if available)
-    - job_type (one of: Full-time, Part-time, Contract, Internship, Freelance)
-    - industry (string, if identifiable)
-    
-    HTML Content (first 8000 chars):
-    ${html.substring(0, 8000)}
-    
-    Return ONLY valid JSON, no markdown or explanation.`;
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
+    }
+
+    const prompt = `You are a job posting parser. Extract structured information from HTML content.
+
+CRITICAL: Return ONLY valid JSON with NO markdown, NO code blocks, NO explanations. Just the JSON object.
+
+Extract these fields:
+{
+  "job_title": "string",
+  "company_name": "string", 
+  "location": "string",
+  "job_description": "string (summarize responsibilities and requirements, max 2000 chars)",
+  "salary_min": number or null,
+  "salary_max": number or null,
+  "job_type": "Full-time" or "Part-time" or "Contract" or "Temporary" or "Internship" or null,
+  "industry": "string or null"
+}
+
+Rules:
+- Extract actual data from the HTML
+- For salary, extract numeric values (convert $80K to 80000)
+- If information is not found, use null
+- Keep job_description concise
+- Return ONLY JSON, nothing else
+
+HTML Content:
+${html.substring(0, 10000)}`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -80,46 +90,52 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: 'You are a job posting parser. Extract structured data and return valid JSON only.' },
+          { role: 'system', content: 'You are a job posting parser. Extract structured data and return ONLY valid JSON with no markdown formatting.' },
           { role: 'user', content: prompt }
         ],
+        temperature: 0.1,
       }),
     });
 
     if (!aiResponse.ok) {
+      const status = aiResponse.status;
+      if (status === 429) {
+        return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (status === 402) {
+        return new Response(JSON.stringify({ error: 'AI credits exhausted. Please add credits.' }), {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       const errorText = await aiResponse.text();
-      console.error('AI API error:', aiResponse.status, errorText);
-      return new Response(JSON.stringify({ error: 'Failed to parse job posting' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      console.error('AI API error:', status, errorText);
+      throw new Error(`AI API error: ${status}`);
     }
 
     const aiData = await aiResponse.json();
-    const extractedContent = aiData.choices[0].message.content;
+    const content = aiData.choices[0].message.content;
+    console.log('AI Response content:', content);
 
-    // Parse JSON from AI response
+    // Parse JSON - handle markdown wrapping
     let jobData;
     try {
-      const jsonMatch = extractedContent.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        jobData = JSON.parse(jsonMatch[0]);
-      } else {
-        jobData = JSON.parse(extractedContent);
-      }
+      jobData = JSON.parse(content);
     } catch (e) {
-      console.error('Failed to parse AI response:', e);
-      return new Response(JSON.stringify({ error: 'Failed to parse extracted data' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.error('Failed to find JSON in response:', content);
+        throw new Error('Failed to parse AI response');
+      }
+      jobData = JSON.parse(jsonMatch[0]);
     }
 
-    return new Response(JSON.stringify({ 
-      success: true,
-      data: jobData,
-      importStatus: 'success' 
-    }), {
+    console.log('Parsed job data:', jobData);
+
+    return new Response(JSON.stringify(jobData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {

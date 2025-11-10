@@ -19,7 +19,8 @@ import {
   Save,
   X,
   Plus,
-  Trash2
+  Trash2,
+  FileText
 } from "lucide-react";
 import { JobMatchScore } from "./JobMatchScore";
 import { SkillsGapAnalysis } from "./SkillsGapAnalysis";
@@ -27,6 +28,7 @@ import { SalaryResearch } from "./SalaryResearch";
 import { InterviewInsights } from "./InterviewInsights";
 import { CompanyResearch } from "./CompanyResearch";
 import { InterviewScheduler, InterviewData } from "./InterviewScheduler";
+import { ApplicationMaterialsDialog } from "./ApplicationMaterialsDialog";
 import { format } from "date-fns";
 import { Job, JobContact } from "@/types/jobs";
 import { cn } from "@/lib/utils";
@@ -46,6 +48,7 @@ export const JobDetailsModal = ({ job, isOpen, onClose, onUpdate }: JobDetailsMo
   const [isSaving, setIsSaving] = useState(false);
   const [editedJob, setEditedJob] = useState<Partial<Job>>({});
   const [newContact, setNewContact] = useState<JobContact>({});
+  const [showMaterialsDialog, setShowMaterialsDialog] = useState(false);
   const { interviews, createInterview, deleteInterview, loading: interviewsLoading } = useInterviews(job?.id);
 
   if (!job) return null;
@@ -199,8 +202,9 @@ export const JobDetailsModal = ({ job, isOpen, onClose, onUpdate }: JobDetailsMo
 
           {/* Tabbed Content */}
           <Tabs defaultValue="description" className="w-full">
-            <TabsList className="grid w-full grid-cols-11 overflow-x-auto">
+            <TabsList className="grid w-full grid-cols-12 overflow-x-auto">
               <TabsTrigger value="description">Description</TabsTrigger>
+              <TabsTrigger value="materials">Materials</TabsTrigger>
               <TabsTrigger value="notes">Notes</TabsTrigger>
               <TabsTrigger value="contacts">Contacts</TabsTrigger>
               <TabsTrigger value="schedule">Schedule</TabsTrigger>
@@ -248,11 +252,11 @@ export const JobDetailsModal = ({ job, isOpen, onClose, onUpdate }: JobDetailsMo
                     value={editedJob.notes ?? displayJob.notes ?? ""}
                     onChange={(e) => setEditedJob({ ...editedJob, notes: e.target.value })}
                     rows={6}
-                    placeholder="Add personal notes or observations..."
+                    placeholder="Add your notes about this job..."
                   />
                 ) : (
-                  <div className="text-sm text-muted-foreground whitespace-pre-wrap mt-2">
-                    {displayJob.notes || "No notes yet"}
+                  <div className="text-sm text-muted-foreground whitespace-pre-wrap min-h-[100px] p-3 border rounded-md">
+                    {displayJob.notes || "No notes added yet"}
                   </div>
                 )}
               </div>
@@ -264,13 +268,61 @@ export const JobDetailsModal = ({ job, isOpen, onClose, onUpdate }: JobDetailsMo
                     value={editedJob.salaryNegotiationNotes ?? displayJob.salaryNegotiationNotes ?? ""}
                     onChange={(e) => setEditedJob({ ...editedJob, salaryNegotiationNotes: e.target.value })}
                     rows={4}
-                    placeholder="Track salary discussions and negotiations..."
+                    placeholder="Notes about salary discussions..."
                   />
                 ) : (
-                  <div className="text-sm text-muted-foreground whitespace-pre-wrap mt-2">
-                    {displayJob.salaryNegotiationNotes || "No negotiation notes yet"}
+                  <div className="text-sm text-muted-foreground whitespace-pre-wrap min-h-[80px] p-3 border rounded-md">
+                    {displayJob.salaryNegotiationNotes || "No salary notes yet"}
                   </div>
                 )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="materials" className="space-y-4">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold">Application Materials</h3>
+                  <Button size="sm" onClick={() => setShowMaterialsDialog(true)}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Manage Materials
+                  </Button>
+                </div>
+
+                <div className="grid gap-4">
+                  {/* Resume Info */}
+                  <div className="border rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <h4 className="font-medium">Resume</h4>
+                    </div>
+                    {displayJob.resume_id ? (
+                      <div className="text-sm text-muted-foreground">
+                        Resume attached
+                      </div>
+                    ) : (
+                      <div className="text-sm text-muted-foreground italic">
+                        No resume selected
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Cover Letter Info */}
+                  <div className="border rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <h4 className="font-medium">Cover Letter</h4>
+                    </div>
+                    {displayJob.cover_letter_id ? (
+                      <div className="text-sm text-muted-foreground">
+                        Cover letter attached
+                      </div>
+                    ) : (
+                      <div className="text-sm text-muted-foreground italic">
+                        No cover letter selected
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </TabsContent>
 
@@ -474,6 +526,16 @@ export const JobDetailsModal = ({ job, isOpen, onClose, onUpdate }: JobDetailsMo
           </Tabs>
         </div>
       </DialogContent>
+
+      {/* Application Materials Dialog */}
+      <ApplicationMaterialsDialog
+        jobId={job.id}
+        currentResumeId={job.resume_id}
+        currentCoverLetterId={job.cover_letter_id}
+        isOpen={showMaterialsDialog}
+        onClose={() => setShowMaterialsDialog(false)}
+        onUpdate={onUpdate}
+      />
     </Dialog>
   );
 };

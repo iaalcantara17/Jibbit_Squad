@@ -6,9 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, Download, Save, Copy } from 'lucide-react';
+import { Sparkles, Download, Save, Copy, FileText, Building2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
+import { useExport } from '@/hooks/useExport';
 
 const TEMPLATES = [
   { id: 'formal', name: 'Formal', description: 'Traditional business letter format' },
@@ -32,6 +34,10 @@ export function CoverLetterGenerator() {
   const [jobs, setJobs] = useState<any[]>([]);
   const [content, setContent] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [companyResearch, setCompanyResearch] = useState<any>(null);
+  const [isResearching, setIsResearching] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const { exportCoverLetterToPDF, exportCoverLetterToWord, exportCoverLetterToText } = useExport();
 
   useEffect(() => {
     fetchJobs();
@@ -46,6 +52,35 @@ export function CoverLetterGenerator() {
     }
   };
 
+  const handleResearchCompany = async () => {
+    const selectedJobData = jobs.find(j => j.id === selectedJob);
+    if (!selectedJobData) {
+      toast.error('Please select a job first');
+      return;
+    }
+
+    setIsResearching(true);
+    try {
+      const research = await api.company.research(
+        selectedJobData.company_name,
+        selectedJobData.company_info?.website
+      );
+      setCompanyResearch(research);
+      toast.success('Company research completed');
+    } catch (error: any) {
+      if (error.message?.includes('Rate limit')) {
+        toast.error("Rate limit exceeded. Please try again later.");
+      } else if (error.message?.includes('credits')) {
+        toast.error("AI credits exhausted. Please add credits to continue.");
+      } else {
+        toast.error('Failed to research company');
+      }
+      console.error('Error:', error);
+    } finally {
+      setIsResearching(false);
+    }
+  };
+
   const handleGenerate = async () => {
     if (!selectedJob) {
       toast.error('Please select a job');
@@ -55,10 +90,24 @@ export function CoverLetterGenerator() {
     setIsGenerating(true);
     try {
       const result = await api.coverLetters.generate(selectedJob, tone, template);
-      setContent(result.content);
+      let generatedContent = result.content;
+
+      // Integrate company research if available
+      if (companyResearch) {
+        const researchInsert = `\n\nI am particularly excited about ${companyResearch.companyInfo?.name || 'your company'}'s work in ${companyResearch.companyInfo?.industry || 'the industry'}. ${companyResearch.recentNews?.[0]?.summary ? `I was impressed to learn about ${companyResearch.recentNews[0].summary}` : ''}`;
+        generatedContent = generatedContent.replace(/\n\nSincerely,/, researchInsert + '\n\nSincerely,');
+      }
+
+      setContent(generatedContent);
       toast.success('Cover letter generated successfully!');
-    } catch (error) {
-      toast.error('Failed to generate cover letter');
+    } catch (error: any) {
+      if (error.message?.includes('Rate limit')) {
+        toast.error("Rate limit exceeded. Please try again later.");
+      } else if (error.message?.includes('credits')) {
+        toast.error("AI credits exhausted. Please add credits to continue.");
+      } else {
+        toast.error('Failed to generate cover letter');
+      }
       console.error('Error:', error);
     } finally {
       setIsGenerating(false);
@@ -89,6 +138,22 @@ export function CoverLetterGenerator() {
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
     toast.success('Copied to clipboard!');
+  };
+
+  const handleExport = async (format: 'pdf' | 'docx' | 'txt') => {
+    const coverLetterData = { title, content, template, tone };
+    try {
+      if (format === 'pdf') {
+        await exportCoverLetterToPDF(coverLetterData);
+      } else if (format === 'docx') {
+        await exportCoverLetterToWord(coverLetterData);
+      } else {
+        exportCoverLetterToText(coverLetterData);
+      }
+      toast.success(`Cover letter exported as ${format.toUpperCase()}`);
+    } catch (error) {
+      toast.error(`Failed to export as ${format.toUpperCase()}`);
+    }
   };
 
   return (
@@ -163,6 +228,32 @@ export function CoverLetterGenerator() {
             </Select>
           </div>
 
+          <div className="space-y-2">
+            <Button 
+              className="w-full" 
+              variant="outline"
+              onClick={handleResearchCompany}
+              disabled={isResearching || !selectedJob}
+            >
+              {isResearching ? (
+                <>Researching...</>
+              ) : (
+                <>
+                  <Building2 className="h-4 w-4 mr-2" />
+                  Research Company
+                </>
+              )}
+            </Button>
+            {companyResearch && (
+              <div className="p-3 border rounded-lg bg-muted/50">
+                <p className="text-sm font-medium mb-1">Research Complete</p>
+                <p className="text-xs text-muted-foreground">
+                  {companyResearch.companyInfo?.name} - {companyResearch.companyInfo?.industry}
+                </p>
+              </div>
+            )}
+          </div>
+
           <Button 
             className="w-full" 
             onClick={handleGenerate}
@@ -214,6 +305,53 @@ export function CoverLetterGenerator() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Export Dialog */}
+      <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Export Cover Letter</DialogTitle>
+            <DialogDescription>
+              Choose the format for exporting your cover letter
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-3 gap-4">
+            <Button
+              variant="outline"
+              className="h-24 flex flex-col items-center justify-center gap-2"
+              onClick={() => {
+                handleExport('pdf');
+                setShowExportDialog(false);
+              }}
+            >
+              <FileText className="h-8 w-8" />
+              <span>PDF</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-24 flex flex-col items-center justify-center gap-2"
+              onClick={() => {
+                handleExport('docx');
+                setShowExportDialog(false);
+              }}
+            >
+              <FileText className="h-8 w-8" />
+              <span>Word</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-24 flex flex-col items-center justify-center gap-2"
+              onClick={() => {
+                handleExport('txt');
+                setShowExportDialog(false);
+              }}
+            >
+              <FileText className="h-8 w-8" />
+              <span>Text</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

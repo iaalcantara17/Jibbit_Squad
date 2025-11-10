@@ -78,11 +78,21 @@ export interface Job {
   updatedAt: string;
   daysInStage?: number;
   deadlineUrgency?: DeadlineUrgency;
+  resume_id?: string;
+  cover_letter_id?: string;
   
   // Legacy fields for compatibility (will be removed)
   _id?: string;
   userId?: string;
   title?: string;
+  company_name?: string;
+  job_title?: string;
+  application_deadline?: string;
+  created_at?: string;
+  updated_at?: string;
+  is_archived?: boolean;
+  status_history?: StatusHistoryEntry[];
+  company_info?: any;
 }
 
 export interface JobStats {
