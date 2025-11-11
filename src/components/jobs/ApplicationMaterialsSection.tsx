@@ -42,15 +42,41 @@ export const ApplicationMaterialsSection = ({
     }
   };
 
-  const handleUpdate = () => {
-    onUpdate({
-      resumeId: selectedResumeId || undefined,
-      coverLetterId: selectedCoverLetterId || undefined,
-    });
-    toast({
-      title: "Materials Updated",
-      description: "Application materials have been linked to this job",
-    });
+  const handleUpdate = async () => {
+    try {
+      onUpdate({
+        resumeId: selectedResumeId || undefined,
+        coverLetterId: selectedCoverLetterId || undefined,
+      });
+
+      // Track materials usage
+      const selectedResume = resumes.find(r => r.id === selectedResumeId);
+      const selectedCoverLetter = coverLetters.find(cl => cl.id === selectedCoverLetterId);
+
+      if (selectedResume || selectedCoverLetter) {
+        const { data: { user } } = await api.auth.getUser();
+        if (user) {
+          await api.materialsUsage.add({
+            jobId,
+            resumeId: selectedResumeId || null,
+            coverLetterId: selectedCoverLetterId || null,
+            notes: null,
+          });
+        }
+      }
+
+      toast({
+        title: "Materials Updated",
+        description: "Application materials have been linked to this job",
+      });
+    } catch (error) {
+      console.error('Failed to update materials:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update materials",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

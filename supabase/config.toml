@@ -50,3 +50,9 @@ verify_jwt = true
 
 [functions.ai-interview-prep]
 verify_jwt = true
+
+[functions.execute-automation-rules]
+verify_jwt = false
+
+[functions.ai-grammar-check]
+verify_jwt = true

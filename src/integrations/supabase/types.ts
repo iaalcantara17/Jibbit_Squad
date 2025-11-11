@@ -52,31 +52,129 @@ export type Database = {
           },
         ]
       }
+      application_status_history: {
+        Row: {
+          changed_at: string
+          from_status: string | null
+          id: string
+          job_id: string
+          notes: string | null
+          to_status: string
+          user_id: string
+        }
+        Insert: {
+          changed_at?: string
+          from_status?: string | null
+          id?: string
+          job_id: string
+          notes?: string | null
+          to_status: string
+          user_id: string
+        }
+        Update: {
+          changed_at?: string
+          from_status?: string | null
+          id?: string
+          job_id?: string
+          notes?: string | null
+          to_status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_status_history_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_rule_runs: {
+        Row: {
+          dedupe_key: string | null
+          id: string
+          job_id: string | null
+          message: string | null
+          outcome: string
+          rule_id: string
+          run_at: string
+          user_id: string
+        }
+        Insert: {
+          dedupe_key?: string | null
+          id?: string
+          job_id?: string | null
+          message?: string | null
+          outcome: string
+          rule_id: string
+          run_at?: string
+          user_id: string
+        }
+        Update: {
+          dedupe_key?: string | null
+          id?: string
+          job_id?: string | null
+          message?: string | null
+          outcome?: string
+          rule_id?: string
+          run_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_rule_runs_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_rule_runs_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "automation_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       automation_rules: {
         Row: {
+          action: Json
           config: Json | null
           created_at: string | null
           enabled: boolean | null
           id: string
+          is_enabled: boolean
+          name: string
           rule_type: string
+          trigger: Json
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          action?: Json
           config?: Json | null
           created_at?: string | null
           enabled?: boolean | null
           id?: string
+          is_enabled?: boolean
+          name?: string
           rule_type: string
+          trigger?: Json
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          action?: Json
           config?: Json | null
           created_at?: string | null
           enabled?: boolean | null
           id?: string
+          is_enabled?: boolean
+          name?: string
           rule_type?: string
+          trigger?: Json
           updated_at?: string | null
           user_id?: string
         }
@@ -532,6 +630,64 @@ export type Database = {
         }
         Relationships: []
       }
+      materials_usage: {
+        Row: {
+          cover_letter_id: string | null
+          cover_letter_version_name: string | null
+          id: string
+          job_id: string
+          notes: string | null
+          resume_id: string | null
+          resume_version_name: string | null
+          used_at: string
+          user_id: string
+        }
+        Insert: {
+          cover_letter_id?: string | null
+          cover_letter_version_name?: string | null
+          id?: string
+          job_id: string
+          notes?: string | null
+          resume_id?: string | null
+          resume_version_name?: string | null
+          used_at?: string
+          user_id: string
+        }
+        Update: {
+          cover_letter_id?: string | null
+          cover_letter_version_name?: string | null
+          id?: string
+          job_id?: string
+          notes?: string | null
+          resume_id?: string | null
+          resume_version_name?: string | null
+          used_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materials_usage_cover_letter_id_fkey"
+            columns: ["cover_letter_id"]
+            isOneToOne: false
+            referencedRelation: "cover_letters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "materials_usage_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "materials_usage_resume_id_fkey"
+            columns: ["resume_id"]
+            isOneToOne: false
+            referencedRelation: "resumes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -594,6 +750,7 @@ export type Database = {
           created_at: string | null
           education: Json | null
           email: string | null
+          email_reminders: boolean | null
           employment_history: Json | null
           experience_level: string | null
           github_url: string | null
@@ -606,6 +763,7 @@ export type Database = {
           portfolio_url: string | null
           professional_headline: string | null
           projects: Json | null
+          reminder_days: number[] | null
           skills: Json | null
           updated_at: string | null
           user_id: string
@@ -617,6 +775,7 @@ export type Database = {
           created_at?: string | null
           education?: Json | null
           email?: string | null
+          email_reminders?: boolean | null
           employment_history?: Json | null
           experience_level?: string | null
           github_url?: string | null
@@ -629,6 +788,7 @@ export type Database = {
           portfolio_url?: string | null
           professional_headline?: string | null
           projects?: Json | null
+          reminder_days?: number[] | null
           skills?: Json | null
           updated_at?: string | null
           user_id: string
@@ -640,6 +800,7 @@ export type Database = {
           created_at?: string | null
           education?: Json | null
           email?: string | null
+          email_reminders?: boolean | null
           employment_history?: Json | null
           experience_level?: string | null
           github_url?: string | null
@@ -652,6 +813,7 @@ export type Database = {
           portfolio_url?: string | null
           professional_headline?: string | null
           projects?: Json | null
+          reminder_days?: number[] | null
           skills?: Json | null
           updated_at?: string | null
           user_id?: string
@@ -751,12 +913,40 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_searches: {
+        Row: {
+          created_at: string
+          filters: Json
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          filters?: Json
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          filters?: Json
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       [_ in never]: never

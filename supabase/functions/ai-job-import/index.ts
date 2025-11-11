@@ -135,7 +135,23 @@ ${html.substring(0, 10000)}`;
 
     console.log('Parsed job data:', jobData);
 
-    return new Response(JSON.stringify(jobData), {
+    // Determine import status based on completeness
+    const hasTitle = jobData.job_title && jobData.job_title.trim() !== '';
+    const hasCompany = jobData.company_name && jobData.company_name.trim() !== '';
+    const hasDescription = jobData.job_description && jobData.job_description.trim() !== '';
+    
+    let importStatus = 'success';
+    if (!hasTitle || !hasCompany) {
+      importStatus = 'failed';
+    } else if (!hasDescription) {
+      importStatus = 'partial';
+    }
+
+    return new Response(JSON.stringify({
+      ...jobData,
+      importStatus,
+      originalUrl: url
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {

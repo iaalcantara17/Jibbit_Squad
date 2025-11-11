@@ -19,10 +19,10 @@ serve(async (req) => {
 
     console.log('Starting daily notification check...');
 
-    // Get all users with profiles (to get email)
+    // Get all users with profiles (to get email and reminder preferences)
     const { data: profiles, error: profilesError } = await supabaseClient
       .from('profiles')
-      .select('user_id, email');
+      .select('user_id, email, reminder_days, email_reminders');
 
     if (profilesError) throw profilesError;
 
@@ -30,7 +30,9 @@ serve(async (req) => {
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 
     for (const profile of profiles || []) {
-      if (!profile.email) continue;
+      if (!profile.email || !profile.email_reminders) continue;
+
+      const reminderDays = profile.reminder_days || [1, 3, 7];
 
       // Check for unread notifications
       const { data: unreadNotifications } = await supabaseClient
@@ -40,9 +42,7 @@ serve(async (req) => {
         .eq('is_read', false)
         .eq('sent_via_email', false);
 
-      if (!unreadNotifications || unreadNotifications.length === 0) continue;
-
-      // Check for upcoming deadlines (next 3 days)
+      // Check for upcoming deadlines based on user preferences
       const { data: upcomingJobs } = await supabaseClient
         .from('jobs')
         .select('*')
@@ -51,13 +51,18 @@ serve(async (req) => {
         .not('application_deadline', 'is', null);
 
       const now = new Date();
-      const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
       
       const urgentJobs = (upcomingJobs || []).filter(job => {
         if (!job.application_deadline) return false;
         const deadline = new Date(job.application_deadline);
-        return deadline >= now && deadline <= threeDaysFromNow;
+        const daysUntil = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        return daysUntil >= 0 && reminderDays.includes(daysUntil);
       });
+
+      // Skip if no unread notifications and no urgent deadlines
+      if ((!unreadNotifications || unreadNotifications.length === 0) && urgentJobs.length === 0) {
+        continue;
+      }
 
       // Check for upcoming interviews (next 7 days)
       const { data: upcomingInterviews } = await supabaseClient
@@ -70,7 +75,7 @@ serve(async (req) => {
       // Build email content
       let emailContent = '<h2>Your JobHuntr Daily Summary</h2>';
       
-      if (unreadNotifications.length > 0) {
+      if (unreadNotifications && unreadNotifications.length > 0) {
         emailContent += `<p>You have <strong>${unreadNotifications.length}</strong> unread notification${unreadNotifications.length > 1 ? 's' : ''}.</p>`;
       }
 

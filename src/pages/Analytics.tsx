@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import { useExport } from "@/hooks/useExport";
 import { Navigation } from "@/components/Navigation";
 import { exportAnalyticsToCSV } from "@/lib/csvExportService";
+import { supabase } from "@/integrations/supabase/client";
 import {
   calculateAverageTimeInStage,
   calculateDeadlineAdherence,
@@ -15,9 +16,17 @@ import {
 } from "@/lib/analyticsService";
 
 export default function Analytics() {
-  const [stats, setStats] = useState<any>(null);
   const [jobs, setJobs] = useState<any[]>([]);
+  const [statusHistory, setStatusHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [kpis, setKpis] = useState({
+    totalJobs: 0,
+    applicationsSent: 0,
+    responseRate: 0,
+    avgTimePerStage: {} as Record<string, number>,
+    deadlineAdherence: 0,
+    timeToOffer: 0,
+  });
   const { exportJobsToCSV } = useExport();
 
   useEffect(() => {
@@ -26,12 +35,60 @@ export default function Analytics() {
 
   const loadData = async () => {
     try {
-      const [statsData, jobsData] = await Promise.all([
-        api.jobs.getStats(),
-        api.jobs.getAll({ isArchived: false })
-      ]);
-      setStats(statsData);
-      setJobs(jobsData);
+      const { data: { user } } = await api.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Fetch jobs and status history
+      const { data: jobsData, error: jobsError } = await supabase
+        .from('jobs')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_archived', false);
+      
+      if (jobsError) throw jobsError;
+
+      const { data: historyData, error: historyError } = await supabase
+        .from('application_status_history')
+        .select('*')
+        .eq('user_id', user.id);
+      
+      if (historyError) throw historyError;
+
+      setJobs(jobsData || []);
+      setStatusHistory(historyData || []);
+
+      // Calculate KPIs
+      const totalJobs = jobsData?.length || 0;
+      const applicationsSent = jobsData?.filter(j => 
+        ['Applied', 'Phone Screen', 'Interview', 'Offer', 'Rejected'].includes(j.status)
+      ).length || 0;
+
+      // Response rate: jobs that advanced beyond Applied
+      const advancedJobIds = new Set(
+        historyData?.filter(h => 
+          ['Phone Screen', 'Interview', 'Offer', 'Rejected'].includes(h.to_status)
+        ).map(h => h.job_id)
+      );
+      const respondedJobs = jobsData?.filter(j => 
+        advancedJobIds.has(j.id) || 
+        ['Phone Screen', 'Interview', 'Offer', 'Rejected'].includes(j.status)
+      ).length || 0;
+      const responseRate = applicationsSent > 0 ? 
+        Math.round((respondedJobs / applicationsSent) * 100) : 0;
+
+      // Calculate stage times
+      const avgTimePerStage = calculateAverageTimeInStage(jobsData || [], historyData || []);
+      const deadlineAdherence = calculateDeadlineAdherence(jobsData || [], historyData || []);
+      const timeToOffer = calculateTimeToOffer(jobsData || [], historyData || []);
+
+      setKpis({
+        totalJobs,
+        applicationsSent,
+        responseRate,
+        avgTimePerStage,
+        deadlineAdherence,
+        timeToOffer,
+      });
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -43,37 +100,34 @@ export default function Analytics() {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
-  const statusData = stats?.byStatus ? [
-    { name: 'Interested', value: stats.byStatus.interested },
-    { name: 'Applied', value: stats.byStatus.applied },
-    { name: 'Phone Screen', value: stats.byStatus.phoneScreen },
-    { name: 'Interview', value: stats.byStatus.interview },
-    { name: 'Offer', value: stats.byStatus.offer },
-    { name: 'Rejected', value: stats.byStatus.rejected },
-  ] : [];
+  const statusCounts = jobs.reduce((acc, job) => {
+    acc[job.status] = (acc[job.status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const statusData = [
+    { name: 'Interested', value: statusCounts['Interested'] || 0 },
+    { name: 'Applied', value: statusCounts['Applied'] || 0 },
+    { name: 'Phone Screen', value: statusCounts['Phone Screen'] || 0 },
+    { name: 'Interview', value: statusCounts['Interview'] || 0 },
+    { name: 'Offer', value: statusCounts['Offer'] || 0 },
+    { name: 'Rejected', value: statusCounts['Rejected'] || 0 },
+  ];
 
   const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#ef4444'];
 
-  const responseRate = stats?.byStatus && stats.byStatus.applied > 0 ? 
-    ((stats.byStatus.phoneScreen + stats.byStatus.interview + stats.byStatus.offer) / 
-    stats.byStatus.applied * 100).toFixed(1) : '0';
-
-  // Enhanced analytics calculations
-  const avgTimeInStage = calculateAverageTimeInStage(jobs);
-  const deadlineAdherence = calculateDeadlineAdherence(jobs);
-  const timeToOffer = calculateTimeToOffer(jobs);
   const monthlyData = getMonthlyApplications(jobs, 6);
 
   const handleExportCSV = () => {
     const analyticsData = {
-      totalApplications: stats?.total || 0,
-      interviewRate: responseRate,
-      offerRate: ((stats?.byStatus?.offer || 0) / (stats?.total || 1) * 100).toFixed(1),
-      rejectionRate: ((stats?.byStatus?.rejected || 0) / (stats?.total || 1) * 100).toFixed(1),
-      activeApplications: stats?.byStatus?.applied || 0,
-      avgTimeToInterview: null,
-      avgTimeToOffer: timeToOffer,
-      deadlineAdherence,
+      totalApplications: kpis.applicationsSent,
+      interviewRate: kpis.responseRate,
+      offerRate: ((statusCounts['Offer'] || 0) / (kpis.totalJobs || 1) * 100).toFixed(1),
+      rejectionRate: ((statusCounts['Rejected'] || 0) / (kpis.totalJobs || 1) * 100).toFixed(1),
+      activeApplications: statusCounts['Applied'] || 0,
+      avgTimeToInterview: kpis.avgTimePerStage['Interview'] || null,
+      avgTimeToOffer: kpis.timeToOffer,
+      deadlineAdherence: kpis.deadlineAdherence,
     };
     exportAnalyticsToCSV(analyticsData);
   };
@@ -107,7 +161,7 @@ export default function Analytics() {
               <Target className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.total || 0}</div>
+              <div className="text-2xl font-bold">{kpis.totalJobs}</div>
             </CardContent>
           </Card>
 
@@ -117,7 +171,7 @@ export default function Analytics() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{responseRate}%</div>
+              <div className="text-2xl font-bold">{kpis.responseRate}%</div>
             </CardContent>
           </Card>
 
@@ -127,7 +181,7 @@ export default function Analytics() {
               <CalendarIcon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{deadlineAdherence}%</div>
+              <div className="text-2xl font-bold">{kpis.deadlineAdherence}%</div>
               <p className="text-xs text-muted-foreground mt-1">On-time applications</p>
             </CardContent>
           </Card>
@@ -139,7 +193,7 @@ export default function Analytics() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {timeToOffer !== null ? `${timeToOffer}d` : 'N/A'}
+                {kpis.timeToOffer !== null ? `${kpis.timeToOffer}d` : 'N/A'}
               </div>
               <p className="text-xs text-muted-foreground mt-1">Average days</p>
             </CardContent>
@@ -214,13 +268,13 @@ export default function Analytics() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {Object.entries(avgTimeInStage).map(([stage, days]) => (
+                {Object.entries(kpis.avgTimePerStage).map(([stage, days]) => (
                   <div key={stage} className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">{stage}</span>
                     <span className="font-semibold">{days} days</span>
                   </div>
                 ))}
-                {Object.keys(avgTimeInStage).length === 0 && (
+                {Object.keys(kpis.avgTimePerStage).length === 0 && (
                   <p className="text-center text-muted-foreground py-4">
                     Not enough data yet
                   </p>
@@ -232,27 +286,23 @@ export default function Analytics() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Upcoming Deadlines</CardTitle>
+            <CardTitle>Monthly Applications</CardTitle>
           </CardHeader>
           <CardContent>
-            {stats?.upcomingDeadlines?.length > 0 ? (
-              <div className="space-y-2">
-                {stats.upcomingDeadlines.map((item: any) => (
-                  <div key={item.jobId} className="flex justify-between items-center p-3 border rounded-md">
-                    <div>
-                      <p className="font-medium">{item.jobTitle}</p>
-                      <p className="text-sm text-muted-foreground">{item.company}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium">{item.daysUntil} days</p>
-                      <p className="text-sm text-muted-foreground">{new Date(item.deadline).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-muted-foreground py-8">No upcoming deadlines</p>
-            )}
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={monthlyData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Line 
+                  type="monotone" 
+                  dataKey="count" 
+                  stroke="hsl(var(--primary))" 
+                  strokeWidth={2}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>

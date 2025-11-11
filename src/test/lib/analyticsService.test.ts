@@ -20,7 +20,7 @@ describe('Analytics Service', () => {
         }
       ];
       
-      const result = calculateAverageTimeInStage(jobs);
+      const result = calculateAverageTimeInStage(jobs, []);
       
       expect(result['Interested']).toBe(4);
       expect(result['Applied']).toBe(10);
@@ -36,7 +36,7 @@ describe('Analytics Service', () => {
         }
       ];
       
-      const result = calculateDeadlineAdherence(jobs);
+      const result = calculateDeadlineAdherence(jobs, []);
       expect(result).toBe(100);
     });
 
@@ -52,7 +52,7 @@ describe('Analytics Service', () => {
         }
       ];
       
-      const result = calculateDeadlineAdherence(jobs);
+      const result = calculateDeadlineAdherence(jobs, []);
       expect(result).toBe(50);
     });
   });
@@ -69,14 +69,14 @@ describe('Analytics Service', () => {
         }
       ];
       
-      const result = calculateTimeToOffer(jobs);
+      const result = calculateTimeToOffer(jobs, []);
       expect(result).toBe(20);
     });
 
     it('returns null when no offers exist', () => {
       const jobs = [{ status: 'Applied', statusHistory: [] }];
       
-      const result = calculateTimeToOffer(jobs);
+      const result = calculateTimeToOffer(jobs, []);
       expect(result).toBeNull();
     });
   });

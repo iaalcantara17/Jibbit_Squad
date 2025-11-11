@@ -17,8 +17,9 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Filter, X, Search } from "lucide-react";
+import { Filter, X, Search, Save } from "lucide-react";
 import { JobStatus, JobType, JobFilters as JobFiltersType } from "@/types/jobs";
+import { SavedSearchesDialog } from "./SavedSearchesDialog";
 
 interface JobFiltersProps {
   filters: JobFiltersType;
@@ -53,6 +54,7 @@ const SORT_OPTIONS = [
 
 export const JobFilters = ({ filters, onFiltersChange, onClearFilters }: JobFiltersProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [savedSearchesOpen, setSavedSearchesOpen] = useState(false);
 
   const hasActiveFilters = 
     filters.search || 
@@ -80,6 +82,15 @@ export const JobFilters = ({ filters, onFiltersChange, onClearFilters }: JobFilt
           className="pl-10"
         />
       </div>
+
+      {/* Saved Searches Button */}
+      <Button 
+        variant="outline"
+        onClick={() => setSavedSearchesOpen(true)}
+      >
+        <Save className="h-4 w-4 mr-2" />
+        Saved Searches
+      </Button>
 
       {/* Filter Sheet */}
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -209,6 +220,16 @@ export const JobFilters = ({ filters, onFiltersChange, onClearFilters }: JobFilt
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Saved Searches Dialog */}
+      <SavedSearchesDialog
+        open={savedSearchesOpen}
+        onOpenChange={setSavedSearchesOpen}
+        currentFilters={filters}
+        onApplySearch={(newFilters) => {
+          onFiltersChange(newFilters);
+        }}
+      />
     </div>
   );
 };

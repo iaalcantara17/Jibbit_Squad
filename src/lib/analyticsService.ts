@@ -20,25 +20,38 @@ export interface JobAnalytics {
   }>;
 }
 
-export const calculateAverageTimeInStage = (jobs: any[]): Record<string, number> => {
+export const calculateAverageTimeInStage = (jobs: any[], statusHistory: any[]): Record<string, number> => {
   const stageTime: Record<string, number[]> = {};
   
+  // Group history by job_id
+  const historyByJob = statusHistory.reduce((acc, h) => {
+    if (!acc[h.job_id]) acc[h.job_id] = [];
+    acc[h.job_id].push(h);
+    return acc;
+  }, {} as Record<string, any[]>);
+  
   jobs.forEach(job => {
-    if (!job.statusHistory || job.statusHistory.length < 2) return;
+    const history = historyByJob[job.id];
+    if (!history || history.length < 2) return;
     
-    for (let i = 1; i < job.statusHistory.length; i++) {
-      const current = job.statusHistory[i];
-      const previous = job.statusHistory[i - 1];
+    // Sort by changed_at
+    const sorted = history.sort((a, b) => 
+      new Date(a.changed_at).getTime() - new Date(b.changed_at).getTime()
+    );
+    
+    for (let i = 1; i < sorted.length; i++) {
+      const current = sorted[i];
+      const previous = sorted[i - 1];
       
       const timeInStage = Math.floor(
-        (new Date(current.changedAt).getTime() - new Date(previous.changedAt).getTime()) / 
+        (new Date(current.changed_at).getTime() - new Date(previous.changed_at).getTime()) / 
         (1000 * 60 * 60 * 24)
       );
       
-      if (!stageTime[previous.status]) {
-        stageTime[previous.status] = [];
+      if (!stageTime[previous.to_status]) {
+        stageTime[previous.to_status] = [];
       }
-      stageTime[previous.status].push(timeInStage);
+      stageTime[previous.to_status].push(timeInStage);
     }
   });
   
@@ -51,18 +64,26 @@ export const calculateAverageTimeInStage = (jobs: any[]): Record<string, number>
   return avgTime;
 };
 
-export const calculateDeadlineAdherence = (jobs: any[]): number => {
-  const jobsWithDeadlines = jobs.filter(j => j.applicationDeadline);
+export const calculateDeadlineAdherence = (jobs: any[], statusHistory: any[]): number => {
+  const jobsWithDeadlines = jobs.filter(j => j.application_deadline);
   if (jobsWithDeadlines.length === 0) return 100;
   
+  // Group history by job_id
+  const historyByJob = statusHistory.reduce((acc, h) => {
+    if (!acc[h.job_id]) acc[h.job_id] = [];
+    acc[h.job_id].push(h);
+    return acc;
+  }, {} as Record<string, any[]>);
+  
   const metDeadlines = jobsWithDeadlines.filter(job => {
-    if (!job.statusHistory || job.statusHistory.length === 0) return false;
+    const history = historyByJob[job.id];
+    if (!history) return false;
     
-    const appliedEntry = job.statusHistory.find((h: any) => h.status === 'Applied');
+    const appliedEntry = history.find((h: any) => h.to_status === 'Applied');
     if (!appliedEntry) return false;
     
-    const appliedDate = new Date(appliedEntry.changedAt);
-    const deadline = new Date(job.applicationDeadline);
+    const appliedDate = new Date(appliedEntry.changed_at);
+    const deadline = new Date(job.application_deadline);
     
     return appliedDate <= deadline;
   });
@@ -70,19 +91,29 @@ export const calculateDeadlineAdherence = (jobs: any[]): number => {
   return Math.round((metDeadlines.length / jobsWithDeadlines.length) * 100);
 };
 
-export const calculateTimeToOffer = (jobs: any[]): number | null => {
-  const offeredJobs = jobs.filter(j => j.status === 'Offer' && j.statusHistory);
+export const calculateTimeToOffer = (jobs: any[], statusHistory: any[]): number | null => {
+  const offeredJobs = jobs.filter(j => j.status === 'Offer');
   
   if (offeredJobs.length === 0) return null;
   
+  // Group history by job_id
+  const historyByJob = statusHistory.reduce((acc, h) => {
+    if (!acc[h.job_id]) acc[h.job_id] = [];
+    acc[h.job_id].push(h);
+    return acc;
+  }, {} as Record<string, any[]>);
+  
   const times = offeredJobs.map(job => {
-    const appliedEntry = job.statusHistory.find((h: any) => h.status === 'Applied');
-    const offerEntry = job.statusHistory.find((h: any) => h.status === 'Offer');
+    const history = historyByJob[job.id];
+    if (!history) return null;
+    
+    const appliedEntry = history.find((h: any) => h.to_status === 'Applied');
+    const offerEntry = history.find((h: any) => h.to_status === 'Offer');
     
     if (!appliedEntry || !offerEntry) return null;
     
-    const appliedDate = new Date(appliedEntry.changedAt);
-    const offerDate = new Date(offerEntry.changedAt);
+    const appliedDate = new Date(appliedEntry.changed_at);
+    const offerDate = new Date(offerEntry.changed_at);
     
     return Math.floor((offerDate.getTime() - appliedDate.getTime()) / (1000 * 60 * 60 * 24));
   }).filter(t => t !== null) as number[];
@@ -98,19 +129,19 @@ export const getUpcomingDeadlines = (jobs: any[], days: number = 30): Array<any>
   
   return jobs
     .filter(job => {
-      if (!job.applicationDeadline || job.isArchived) return false;
-      const deadline = new Date(job.applicationDeadline);
+      if (!job.application_deadline || job.is_archived) return false;
+      const deadline = new Date(job.application_deadline);
       return deadline >= now && deadline <= futureDate;
     })
     .map(job => {
-      const deadline = new Date(job.applicationDeadline);
+      const deadline = new Date(job.application_deadline);
       const daysUntil = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       
       return {
         jobId: job.id,
-        jobTitle: job.jobTitle || job.title,
-        company: typeof job.company === 'string' ? job.company : job.company?.name || 'Unknown',
-        deadline: job.applicationDeadline,
+        jobTitle: job.job_title || job.title,
+        company: job.company_name || 'Unknown',
+        deadline: job.application_deadline,
         daysUntil
       };
     })
@@ -128,13 +159,10 @@ export const getMonthlyApplications = (jobs: any[], months: number = 6): Array<a
     monthsData[key] = 0;
   }
   
-  // Count applications per month
+  // Count jobs by created_at month
   jobs.forEach(job => {
-    const appliedEntry = job.statusHistory?.find((h: any) => h.status === 'Applied');
-    if (!appliedEntry) return;
-    
-    const appliedDate = new Date(appliedEntry.changedAt);
-    const key = appliedDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    const createdDate = new Date(job.created_at);
+    const key = createdDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
     
     if (monthsData.hasOwnProperty(key)) {
       monthsData[key]++;

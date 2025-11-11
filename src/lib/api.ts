@@ -1,7 +1,14 @@
 import { supabase } from '@/integrations/supabase/client';
+import { savedSearchesApi } from './api/savedSearches';
+import { materialsUsageApi } from './api/materialsUsage';
 
 // Supabase-based API client
 export const api = {
+  auth: {
+    getUser: async () => {
+      return await supabase.auth.getUser();
+    },
+  },
   // Jobs management
   jobs: {
     getAll: async (filters?: any) => {
@@ -404,6 +411,67 @@ export const api = {
 
       if (error) throw error;
       return data;
+    },
+  },
+
+  materialsUsage: {
+    async listByJob(jobId: string) {
+      const { data, error } = await supabase
+        .from('materials_usage')
+        .select('*')
+        .eq('job_id', jobId)
+        .order('used_at', { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+
+    async add(params: {
+      jobId: string;
+      resumeId?: string | null;
+      coverLetterId?: string | null;
+      notes?: string | null;
+    }) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { data, error } = await supabase
+        .from('materials_usage')
+        .insert({
+          user_id: user.id,
+          job_id: params.jobId,
+          resume_id: params.resumeId ?? null,
+          cover_letter_id: params.coverLetterId ?? null,
+          notes: params.notes ?? null,
+        })
+        .select('*')
+        .single();
+      if (error) throw error;
+      return data!;
+    },
+
+    async usageByMonth({ months = 6 }: { months?: number } = {}) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const since = new Date();
+      since.setMonth(since.getMonth() - months);
+      const { data, error } = await supabase
+        .from('materials_usage')
+        .select('used_at')
+        .eq('user_id', user.id)
+        .gte('used_at', since.toISOString());
+      if (error) throw error;
+      
+      // Aggregate in client
+      const buckets = new Map<string, number>();
+      data?.forEach(({ used_at }) => {
+        const d = new Date(used_at);
+        const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+        buckets.set(key, (buckets.get(key) ?? 0) + 1);
+      });
+      return Array.from(buckets.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([month, count]) => ({ month, count }));
     },
   },
 };
