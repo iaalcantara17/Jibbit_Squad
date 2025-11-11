@@ -23,7 +23,7 @@ export function DeadlineCalendar({ jobs, onJobClick }: DeadlineCalendarProps) {
     return 'normal';
   };
 
-  // Get jobs with deadlines
+  // Get jobs with deadlines - includes all jobs with application_deadline set
   const jobsWithDeadlines = jobs.filter(job => job.applicationDeadline);
 
   // Get jobs for selected date

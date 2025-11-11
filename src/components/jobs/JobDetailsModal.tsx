@@ -83,6 +83,10 @@ export const JobDetailsModal = ({ job, isOpen, onClose, onUpdate }: JobDetailsMo
       updateData.updated_at = new Date().toISOString();
       
       await api.jobs.update(job.id, updateData);
+      
+      // Update the local job object with the changes immediately
+      Object.assign(job, editedJob);
+      
       toast.success("Job updated successfully");
       setIsEditing(false);
       setEditedJob({});

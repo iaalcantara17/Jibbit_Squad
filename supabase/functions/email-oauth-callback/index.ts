@@ -10,28 +10,50 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
-
+  
   try {
+    // Parse query parameters from URL
+    const url = new URL(req.url);
+    const code = url.searchParams.get('code');
+    const stateParam = url.searchParams.get('state');
+    const errorParam = url.searchParams.get('error');
+
+    // Decode state which may contain JSON with user_id and app_origin
+    let user_id: string | null = null;
+    let app_origin: string | null = null;
+    if (stateParam) {
+      try {
+        const decoded = JSON.parse(atob(stateParam));
+        user_id = decoded?.user_id ?? null;
+        app_origin = decoded?.app_origin ?? null;
+      } catch {
+        // Backward compatibility: state was just user_id
+        user_id = stateParam;
+      }
+    }
+
+    const defaultRedirectBase = (Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovableproject.com')) || '';
+    const redirectBase = app_origin || defaultRedirectBase;
+
+    if (errorParam) {
+      return new Response(null, {
+        status: 302,
+        headers: { Location: `${redirectBase}/email/callback?error=${encodeURIComponent(errorParam)}` },
+      });
+    }
+
+    if (!code || !user_id) {
+      return new Response(null, {
+        status: 302,
+        headers: { Location: `${redirectBase}/email/callback?error=${encodeURIComponent('Missing required parameters')}` },
+      });
+    }
+
+    // Create admin client to store integration
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
-
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
-      throw new Error('Not authenticated');
-    }
-
-    const { code } = await req.json();
-
-    if (!code) {
-      throw new Error('Missing authorization code');
-    }
 
     const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
     const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET');
@@ -67,7 +89,7 @@ serve(async (req) => {
     const { error: dbError } = await supabaseClient
       .from('email_integrations')
       .upsert({
-        user_id: user.id,
+        user_id: user_id,
         provider: 'google',
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
@@ -81,26 +103,46 @@ serve(async (req) => {
       throw new Error('Failed to store integration');
     }
 
-    return new Response(
-      JSON.stringify({ success: true }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    // Redirect back to the app with success
+    return new Response(null, {
+      status: 302,
+      headers: {
+        'Location': `${redirectBase}/email/callback?success=true`,
+      },
+    });
   } catch (error) {
     console.error('Email OAuth callback error:', error);
-    return new Response(
-      JSON.stringify({
-        error: {
-          code: 'OAUTH_CALLBACK_FAILED',
-          message: error instanceof Error ? error.message : 'OAuth callback failed',
-        },
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    // Attempt a friendly redirect if possible
+    try {
+      const url = new URL(req.url);
+      const stateParam = url.searchParams.get('state');
+      let app_origin: string | null = null;
+      if (stateParam) {
+        try {
+          const decoded = JSON.parse(atob(stateParam));
+          app_origin = decoded?.app_origin ?? null;
+        } catch {}
       }
-    );
+      const defaultRedirectBase = (Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovableproject.com')) || '';
+      const redirectBase = app_origin || defaultRedirectBase;
+      const message = error instanceof Error ? error.message : 'OAuth callback failed';
+      return new Response(null, {
+        status: 302,
+        headers: { Location: `${redirectBase}/email/callback?error=${encodeURIComponent(message)}` },
+      });
+    } catch {
+      return new Response(
+        JSON.stringify({
+          error: {
+            code: 'OAUTH_CALLBACK_FAILED',
+            message: error instanceof Error ? error.message : 'OAuth callback failed',
+          },
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
   }
 });

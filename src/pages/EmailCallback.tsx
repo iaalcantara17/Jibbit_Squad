@@ -12,37 +12,25 @@ export default function EmailCallback() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Get the authorization code from URL
+        // Check if success parameter is present
         const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
+        const success = urlParams.get('success');
         const error = urlParams.get('error');
 
         if (error) {
           throw new Error(error);
         }
 
-        if (!code) {
-          throw new Error('No authorization code received');
-        }
-
-        // Exchange code for tokens via backend
-        const { data, error: callbackError } = await supabase.functions.invoke('email-oauth-callback', {
-          body: { code }
-        });
-
-        if (callbackError) throw callbackError;
-
-        setStatus('success');
-        toast.success('Email connected successfully!');
-        
-        // Close popup if opened in popup
-        if (window.opener) {
-          window.close();
-        } else {
+        if (success === 'true') {
+          setStatus('success');
+          toast.success('Email connected successfully!');
+          
           // Redirect to email integration page after 2 seconds
           setTimeout(() => {
             navigate('/email-integration');
           }, 2000);
+        } else {
+          throw new Error('OAuth callback did not complete successfully');
         }
       } catch (error: any) {
         console.error('OAuth callback error:', error);
@@ -51,11 +39,7 @@ export default function EmailCallback() {
         
         // Redirect after 3 seconds
         setTimeout(() => {
-          if (window.opener) {
-            window.close();
-          } else {
-            navigate('/email-integration');
-          }
+          navigate('/email-integration');
         }, 3000);
       }
     };

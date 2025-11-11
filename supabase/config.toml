@@ -64,7 +64,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.email-oauth-callback]
-verify_jwt = true
+verify_jwt = false
 
 [functions.automation-rule-upsert]
 verify_jwt = true

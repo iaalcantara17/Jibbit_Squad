@@ -33,9 +33,15 @@ export default function EmailIntegration() {
   const handleConnectEmail = async () => {
     setIsConnecting(true);
     try {
-      // Call the email OAuth start function
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Please log in first');
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('email-oauth-start', {
-        body: {}
+        body: { user_id: user.id, email: user.email }
       });
 
       if (error) {
@@ -47,25 +53,8 @@ export default function EmailIntegration() {
       }
 
       if (data?.authUrl) {
-        // Open OAuth flow in a popup
-        const width = 600;
-        const height = 700;
-        const left = window.screen.width / 2 - width / 2;
-        const top = window.screen.height / 2 - height / 2;
-        
-        const popup = window.open(
-          data.authUrl,
-          'EmailOAuth',
-          `width=${width},height=${height},left=${left},top=${top}`
-        );
-
-        // Listen for OAuth callback
-        const checkPopup = setInterval(() => {
-          if (popup?.closed) {
-            clearInterval(checkPopup);
-            checkConnectionStatus();
-          }
-        }, 500);
+        // Redirect to OAuth flow
+        window.location.href = data.authUrl;
       }
     } catch (error: any) {
       console.error('Error connecting email:', error);
