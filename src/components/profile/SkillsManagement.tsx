@@ -81,20 +81,23 @@ export const SkillsManagement = () => {
     try {
       if (editingId) {
         const updatedSkills = skills.map(s => s.id === editingId ? { ...formData, id: editingId } : s);
+        setSkills(updatedSkills); // Update local state immediately
         await updateProfileField('skills', updatedSkills);
         toast.success('Skill updated successfully');
         setEditingId(null);
       } else {
         const newSkill = { ...formData, id: crypto.randomUUID() };
-        await updateProfileField('skills', [...skills, newSkill]);
+        const updatedSkills = [...skills, newSkill];
+        setSkills(updatedSkills); // Update local state immediately
+        await updateProfileField('skills', updatedSkills);
         toast.success('Skill added successfully');
       }
 
       await refreshProfile();
-      await fetchSkills();
       resetForm();
     } catch (error) {
       toast.error('An unexpected error occurred');
+      await fetchSkills(); // Rollback on error
     } finally {
       setIsSaving(false);
     }
@@ -112,16 +115,16 @@ export const SkillsManagement = () => {
 
   const handleDelete = async (id: string) => {
     const updatedSkills = skills.filter(s => s.id !== id);
+    setSkills(updatedSkills); // Update local state immediately
     await updateProfileField('skills', updatedSkills);
     toast.success('Skill removed from your profile');
     await refreshProfile();
-    await fetchSkills();
   };
 
   const handleMoveToCategory = async (skillId: string, newCategory: Skill['category']) => {
     const updatedSkills = skills.map(s => s.id === skillId ? { ...s, category: newCategory } : s);
+    setSkills(updatedSkills); // Update local state immediately
     await updateProfileField('skills', updatedSkills);
-    await fetchSkills();
     await refreshProfile();
     toast.success(`Skill moved to ${newCategory}`);
   };

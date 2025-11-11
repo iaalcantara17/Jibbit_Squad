@@ -17,10 +17,11 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Filter, X, Search, Save } from "lucide-react";
 import { JobStatus, JobType, JobFilters as JobFiltersType } from "@/types/jobs";
 import { SavedSearchesDialog } from "./SavedSearchesDialog";
-import { JOB_STATUS, STATUS_LABELS, getStatusLabel } from '@/lib/constants/jobStatus';
+import { JOB_STATUS, STATUS_LABELS, getStatusLabel, PIPELINE_STAGES } from '@/lib/constants/jobStatus';
 
 interface JobFiltersProps {
   filters: JobFiltersType;
@@ -56,10 +57,17 @@ const SORT_OPTIONS = [
 export const JobFilters = ({ filters, onFiltersChange, onClearFilters }: JobFiltersProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [savedSearchesOpen, setSavedSearchesOpen] = useState(false);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(
+    filters.status ? [filters.status] : []
+  );
 
   const hasActiveFilters = 
     filters.search || 
     filters.status || 
+    filters.salaryMin !== undefined ||
+    filters.salaryMax !== undefined ||
+    filters.deadlineFrom !== undefined ||
+    filters.deadlineTo !== undefined ||
     filters.isArchived !== undefined || 
     filters.sortBy;
 
@@ -69,6 +77,16 @@ export const JobFilters = ({ filters, onFiltersChange, onClearFilters }: JobFilt
 
   const handleFilterChange = (key: keyof JobFiltersType, value: any) => {
     onFiltersChange({ ...filters, [key]: value || undefined });
+  };
+
+  const handleStatusToggle = (status: string) => {
+    const newStatuses = selectedStatuses.includes(status)
+      ? selectedStatuses.filter(s => s !== status)
+      : [...selectedStatuses, status];
+    
+    setSelectedStatuses(newStatuses);
+    // For now, only support single status until backend supports array
+    onFiltersChange({ ...filters, status: (newStatuses[0] as JobStatus) || undefined });
   };
 
   return (
@@ -113,27 +131,107 @@ export const JobFilters = ({ filters, onFiltersChange, onClearFilters }: JobFilt
           </SheetHeader>
 
           <div className="space-y-6 mt-6">
-            {/* Status Filter */}
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select
-                value={filters.status || "all"}
-                onValueChange={(value) =>
-                  handleFilterChange("status", value === "all" ? undefined : value)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  {JOB_STATUSES.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {getStatusLabel(status)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Status Filter - Multi-select */}
+            <div className="space-y-3">
+              <Label>Status (Select Multiple)</Label>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {PIPELINE_STAGES.map((stage) => (
+                  <div key={stage.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`status-${stage.id}`}
+                      checked={selectedStatuses.includes(stage.id)}
+                      onCheckedChange={() => handleStatusToggle(stage.id)}
+                    />
+                    <Label
+                      htmlFor={`status-${stage.id}`}
+                      className="text-sm font-normal cursor-pointer flex-1"
+                    >
+                      {stage.label}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+              {selectedStatuses.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedStatuses([]);
+                    handleFilterChange("status", undefined);
+                  }}
+                  className="h-7 text-xs"
+                >
+                  Clear Status Filters
+                </Button>
+              )}
+            </div>
+
+            {/* Salary Range Filter */}
+            <div className="space-y-3">
+              <Label>Salary Range</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label htmlFor="salaryMin" className="text-xs text-muted-foreground">
+                    Min ($)
+                  </Label>
+                  <Input
+                    id="salaryMin"
+                    type="number"
+                    placeholder="e.g., 50000"
+                    value={filters.salaryMin || ""}
+                    onChange={(e) =>
+                      handleFilterChange("salaryMin", e.target.value ? Number(e.target.value) : undefined)
+                    }
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="salaryMax" className="text-xs text-muted-foreground">
+                    Max ($)
+                  </Label>
+                  <Input
+                    id="salaryMax"
+                    type="number"
+                    placeholder="e.g., 150000"
+                    value={filters.salaryMax || ""}
+                    onChange={(e) =>
+                      handleFilterChange("salaryMax", e.target.value ? Number(e.target.value) : undefined)
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Deadline Range Filter */}
+            <div className="space-y-3">
+              <Label>Application Deadline</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label htmlFor="deadlineFrom" className="text-xs text-muted-foreground">
+                    From
+                  </Label>
+                  <Input
+                    id="deadlineFrom"
+                    type="date"
+                    value={filters.deadlineFrom || ""}
+                    onChange={(e) =>
+                      handleFilterChange("deadlineFrom", e.target.value || undefined)
+                    }
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="deadlineTo" className="text-xs text-muted-foreground">
+                    To
+                  </Label>
+                  <Input
+                    id="deadlineTo"
+                    type="date"
+                    value={filters.deadlineTo || ""}
+                    onChange={(e) =>
+                      handleFilterChange("deadlineTo", e.target.value || undefined)
+                    }
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Archive Filter */}

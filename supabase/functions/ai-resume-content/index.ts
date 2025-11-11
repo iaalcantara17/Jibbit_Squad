@@ -27,7 +27,7 @@ serve(async (req) => {
       });
     }
 
-    const { jobId, sections = ['summary'] } = await req.json();
+    const { jobId, sections = ['summary'], returnFormat = 'variations' } = await req.json();
 
     // Get user profile
     const { data: profile } = await supabaseClient
@@ -63,91 +63,120 @@ serve(async (req) => {
       });
     }
 
-    // Build prompt based on section type
-    const sectionType = sections[0];
-    let prompt = '';
     const systemPrompt = 'You are an expert resume writer. Generate professional, ATS-optimized content in complete sentences or bullet points. Never split sentences mid-phrase.';
 
-    if (sectionType === 'summary') {
-      prompt = buildSummaryPrompt(profile, job);
-    } else if (sectionType === 'experience') {
-      prompt = buildExperiencePrompt(profile, job);
-    } else if (sectionType === 'skills') {
-      prompt = buildSkillsPrompt(profile, job);
+    // Helper function to generate content for a specific section
+    const generateForSection = async (sectionType: string) => {
+      let prompt = '';
+      if (sectionType === 'summary') {
+        prompt = buildSummaryPrompt(profile, job);
+      } else if (sectionType === 'experience') {
+        prompt = buildExperiencePrompt(profile, job);
+      } else if (sectionType === 'skills') {
+        prompt = buildSkillsPrompt(profile, job);
+      }
+
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: prompt }
+          ],
+          tools: [{
+            type: "function",
+            function: {
+              name: "generate_content",
+              description: `Generate ${sectionType} content`,
+              parameters: {
+                type: "object",
+                properties: {
+                  variations: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        content: { type: "string", description: "Complete sentences or bullet points, never mid-phrase fragments" },
+                        atsScore: { type: "number", minimum: 0, maximum: 100 },
+                        keywords: { type: "array", items: { type: "string" } }
+                      },
+                      required: ["content", "atsScore", "keywords"]
+                    }
+                  }
+                },
+                required: ["variations"],
+                additionalProperties: false
+              }
+            }
+          }],
+          tool_choice: { type: "function", function: { name: "generate_content" } }
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          throw { code: 'RATE_LIMIT', message: 'Rate limit exceeded', status: 429 };
+        }
+        if (response.status === 402) {
+          throw { code: 'PAYMENT_REQUIRED', message: 'AI credits exhausted', status: 402 };
+        }
+        const errorText = await response.text();
+        console.error('AI API error:', response.status, errorText);
+        throw { code: 'AI_ERROR', message: 'Failed to generate content', status: 500 };
+      }
+
+      const data = await response.json();
+      const toolCall = data.choices[0]?.message?.tool_calls?.[0];
+      return toolCall?.function?.arguments 
+        ? JSON.parse(toolCall.function.arguments)
+        : { variations: [] };
+    };
+
+    // If multiple sections requested, generate each separately
+    if (sections.length > 1 && returnFormat === 'structured') {
+      try {
+        const structured: any = {};
+        
+        for (const section of sections) {
+          const result = await generateForSection(section);
+          if (section === 'summary') {
+            structured.summary = result.variations.map((v: any) => v.content);
+          } else if (section === 'experience') {
+            structured.experience = result.variations.map((v: any) => v.content);
+          } else if (section === 'skills') {
+            structured.skills = result.variations.map((v: any) => v.content);
+          }
+        }
+
+        return new Response(JSON.stringify(structured), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } catch (error: any) {
+        return new Response(JSON.stringify({ error: { code: error.code || 'INTERNAL_ERROR', message: error.message || 'Unknown error' } }), {
+          status: error.status || 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt }
-        ],
-        tools: [{
-          type: "function",
-          function: {
-            name: "generate_content",
-            description: `Generate ${sectionType} content`,
-            parameters: {
-              type: "object",
-              properties: {
-                variations: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      content: { type: "string", description: "Complete sentences or bullet points, never mid-phrase fragments" },
-                      atsScore: { type: "number", minimum: 0, maximum: 100 },
-                      keywords: { type: "array", items: { type: "string" } }
-                    },
-                    required: ["content", "atsScore", "keywords"]
-                  }
-                }
-              },
-              required: ["variations"],
-              additionalProperties: false
-            }
-          }
-        }],
-        tool_choice: { type: "function", function: { name: "generate_content" } }
-      }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: { code: 'RATE_LIMIT', message: 'Rate limit exceeded' } }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: { code: 'PAYMENT_REQUIRED', message: 'AI credits exhausted' } }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      const errorText = await response.text();
-      console.error('AI API error:', response.status, errorText);
-      return new Response(JSON.stringify({ error: { code: 'AI_ERROR', message: 'Failed to generate content' } }), {
-        status: 500,
+    // Single section request
+    try {
+      const sectionType = sections[0];
+      const result = await generateForSection(sectionType);
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: { code: error.code || 'INTERNAL_ERROR', message: error.message || 'Unknown error' } }), {
+        status: error.status || 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    const data = await response.json();
-    const toolCall = data.choices[0]?.message?.tool_calls?.[0];
-    const result = toolCall?.function?.arguments 
-      ? JSON.parse(toolCall.function.arguments)
-      : { variations: [] };
-
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
   } catch (error) {
     console.error('Error in ai-resume-content:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

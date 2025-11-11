@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Navigation } from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, LayoutGrid, TrendingUp } from 'lucide-react';
+import { Plus, LayoutGrid, TrendingUp, Calendar } from 'lucide-react';
 import { JobForm } from '@/components/jobs/JobForm';
 import { JobCard } from '@/components/jobs/JobCard';
 import { JobDetailsModal } from '@/components/jobs/JobDetailsModal';
 import { JobFilters } from '@/components/jobs/JobFilters';
+import { DeadlineCalendar } from '@/components/jobs/DeadlineCalendar';
 import { Job, JobFilters as JobFiltersType } from '@/types/jobs';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
@@ -17,18 +19,53 @@ import { JobPipeline } from '@/components/jobs/JobPipeline';
 
 const Jobs = () => {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'pipeline'>('grid');
-  const [filters, setFilters] = useState<JobFiltersType>({
-    isArchived: false,
-    sortBy: 'created_at',
-    sortOrder: 'desc',
+  const [viewMode, setViewMode] = useState<'grid' | 'pipeline' | 'calendar'>(
+    (searchParams.get('view') as any) || 'grid'
+  );
+  
+  // Initialize filters from URL params
+  const [filters, setFilters] = useState<JobFiltersType>(() => {
+    const params: JobFiltersType = {
+      isArchived: false,
+      sortBy: 'created_at',
+      sortOrder: 'desc',
+    };
+    
+    if (searchParams.get('search')) params.search = searchParams.get('search')!;
+    if (searchParams.get('status')) params.status = searchParams.get('status') as any;
+    if (searchParams.get('salaryMin')) params.salaryMin = Number(searchParams.get('salaryMin'));
+    if (searchParams.get('salaryMax')) params.salaryMax = Number(searchParams.get('salaryMax'));
+    if (searchParams.get('deadlineFrom')) params.deadlineFrom = searchParams.get('deadlineFrom')!;
+    if (searchParams.get('deadlineTo')) params.deadlineTo = searchParams.get('deadlineTo')!;
+    if (searchParams.get('sortBy')) params.sortBy = searchParams.get('sortBy')!;
+    if (searchParams.get('sortOrder')) params.sortOrder = searchParams.get('sortOrder') as any;
+    
+    return params;
   });
   const [debouncedFilters, setDebouncedFilters] = useState<JobFiltersType>(filters);
+
+  // Update URL params when filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    
+    if (filters.search) params.set('search', filters.search);
+    if (filters.status) params.set('status', filters.status);
+    if (filters.salaryMin) params.set('salaryMin', filters.salaryMin.toString());
+    if (filters.salaryMax) params.set('salaryMax', filters.salaryMax.toString());
+    if (filters.deadlineFrom) params.set('deadlineFrom', filters.deadlineFrom);
+    if (filters.deadlineTo) params.set('deadlineTo', filters.deadlineTo);
+    if (filters.sortBy) params.set('sortBy', filters.sortBy);
+    if (filters.sortOrder) params.set('sortOrder', filters.sortOrder);
+    if (viewMode !== 'grid') params.set('view', viewMode);
+    
+    setSearchParams(params, { replace: true });
+  }, [filters, viewMode]);
 
   const statuses: Array<{ value: string; label: string; count: number }> = [
     { value: 'all', label: 'All Jobs', count: jobs.length },
@@ -112,13 +149,32 @@ const Jobs = () => {
               </p>
             </div>
             <div className="flex gap-3">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setViewMode(viewMode === 'grid' ? 'pipeline' : 'grid')}
-              >
-                {viewMode === 'grid' ? <TrendingUp className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
-              </Button>
+              <div className="flex gap-1 border rounded-md">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className="rounded-r-none"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'pipeline' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('pipeline')}
+                  className="rounded-none"
+                >
+                  <TrendingUp className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('calendar')}
+                  className="rounded-l-none"
+                >
+                  <Calendar className="h-4 w-4" />
+                </Button>
+              </div>
               <Button onClick={() => setIsAddDialogOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Job
@@ -151,12 +207,12 @@ const Jobs = () => {
             ))}
           </div>
 
-          {/* Jobs Grid/Pipeline */}
+          {/* Jobs Grid/Pipeline/Calendar */}
           {isLoading ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground">Loading jobs...</p>
             </div>
-          ) : filteredJobs.length === 0 ? (
+          ) : filteredJobs.length === 0 && viewMode !== 'calendar' ? (
             <div className="text-center py-12 border border-dashed rounded-lg">
               <p className="text-muted-foreground mb-4">
                 {selectedStatus === 'all' ? 'No jobs yet' : `No jobs in ${selectedStatus} status`}
@@ -166,8 +222,16 @@ const Jobs = () => {
                 Add Your First Job
               </Button>
             </div>
+          ) : viewMode === 'calendar' ? (
+            <DeadlineCalendar 
+              jobs={jobs.filter(j => !j.is_archived)} 
+              onJobClick={setSelectedJob}
+            />
           ) : viewMode === 'pipeline' ? (
-            <JobPipeline jobs={jobs} onJobUpdate={fetchJobs} />
+            <JobPipeline 
+              jobs={jobs.filter(j => !j.is_archived)} 
+              onJobUpdate={fetchJobs} 
+            />
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredJobs.map((job) => (
@@ -175,6 +239,7 @@ const Jobs = () => {
                   key={job.id}
                   job={job}
                   onView={setSelectedJob}
+                  onEdit={setSelectedJob}
                   onDelete={handleDeleteJob}
                   onArchive={handleArchiveJob}
                 />

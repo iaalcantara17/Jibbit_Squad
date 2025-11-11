@@ -257,10 +257,20 @@ export const api = {
 
     generateContent: async (resumeId: string, jobId: string, sections: string[]) => {
       const { data, error } = await supabase.functions.invoke('ai-resume-content', {
-        body: { jobId, sections }
+        body: { jobId, sections, returnFormat: 'structured' }
       });
 
       if (error) throw error;
+      
+      // Transform the structured response into the format expected by ResumeBuilder
+      if (sections.length > 1) {
+        return {
+          summary: data.summary || [],
+          experience: data.experience || [],
+          skills: data.skills || []
+        };
+      }
+      
       return data;
     },
 

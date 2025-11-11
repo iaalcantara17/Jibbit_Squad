@@ -127,32 +127,29 @@ export const AutomationRuleBuilder = () => {
       if (!user) throw new Error('Not authenticated');
 
       if (isCreating) {
-        const { error } = await supabase
-          .from('automation_rules')
-          .insert({
+        const { data, error } = await supabase.functions.invoke('automation-rule-upsert', {
+          body: {
             name: editingRule.name,
             is_enabled: editingRule.is_enabled ?? true,
             trigger: editingRule.trigger,
             action: editingRule.action,
-            user_id: user.id,
-            rule_type: editingRule.trigger.type,
-          });
+          }
+        });
 
         if (error) {
           console.error('Insert error:', error);
           throw error;
         }
       } else {
-        const { error } = await supabase
-          .from('automation_rules')
-          .update({
+        const { data, error } = await supabase.functions.invoke('automation-rule-upsert', {
+          body: {
+            id: editingRule.id,
             name: editingRule.name,
             is_enabled: editingRule.is_enabled,
             trigger: editingRule.trigger,
             action: editingRule.action,
-            rule_type: editingRule.trigger.type,
-          })
-          .eq('id', editingRule.id);
+          }
+        });
 
         if (error) {
           console.error('Update error:', error);

@@ -16,17 +16,10 @@ serve(async (req) => {
     const redirectUri = `${supabaseUrl}/functions/v1/email-oauth-callback`;
 
     if (!clientId) {
+      // Return 200 with configured=false so the UI can disable the button gracefully
       return new Response(
-        JSON.stringify({
-          error: {
-            code: 'OAUTH_NOT_CONFIGURED',
-            message: 'OAuth credentials not configured. Please contact support.',
-          },
-        }),
-        {
-          status: 503,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
+        JSON.stringify({ configured: false, reason: 'OAuth credentials not configured' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 

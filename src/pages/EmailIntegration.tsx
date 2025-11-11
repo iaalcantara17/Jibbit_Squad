@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,10 +6,29 @@ import { Badge } from "@/components/ui/badge";
 import { Mail, CheckCircle, AlertCircle, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function EmailIntegration() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [isConfigReady, setIsConfigReady] = useState<boolean>(true);
+  const [disabledReason, setDisabledReason] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Probe config so we can disable the button gracefully if creds are missing
+    (async () => {
+      try {
+        const { data } = await supabase.functions.invoke('email-oauth-start', { body: {} });
+        if (data && data.configured === false) {
+          setIsConfigReady(false);
+          setDisabledReason('Google OAuth is not configured. Please add client ID/secret.');
+        }
+      } catch (e) {
+        // If the function errors, keep button enabled; handle on click
+        console.warn('Email OAuth config probe failed:', e);
+      }
+    })();
+  }, []);
 
   const handleConnectEmail = async () => {
     setIsConnecting(true);
@@ -124,12 +143,24 @@ export default function EmailIntegration() {
                       </Button>
                     </>
                   ) : (
-                    <Button
-                      onClick={handleConnectEmail}
-                      disabled={isConnecting}
-                    >
-                      {isConnecting ? 'Connecting...' : 'Connect Gmail'}
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={handleConnectEmail}
+                            disabled={isConnecting || !isConfigReady}
+                            aria-disabled={!isConfigReady}
+                          >
+                            {isConnecting ? 'Connecting...' : 'Connect Gmail'}
+                          </Button>
+                        </TooltipTrigger>
+                        {!isConfigReady && (
+                          <TooltipContent>
+                            <p>{disabledReason || 'Email integration is not configured.'}</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
                   )}
                 </div>
               </div>

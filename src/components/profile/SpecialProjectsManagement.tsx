@@ -119,21 +119,20 @@ export const SpecialProjectsManagement = () => {
     try {
       if (editingId) {
         const updatedProjects = entries.map(p => p.id === editingId ? { ...formData, id: editingId } : p);
+        setEntries(updatedProjects); // Update local state immediately
         await updateProfileField('projects', updatedProjects);
-        // Invalidate queries for immediate UI update
         await queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
         await queryClient.invalidateQueries({ queryKey: ['profileProjects', user?.id] });
-        await fetchProjects();
         await refreshProfile();
         toast.success('Project updated successfully');
         setEditingId(null);
       } else {
         const newProject = { ...formData, id: crypto.randomUUID() };
-        await updateProfileField('projects', [...entries, newProject]);
-        // Invalidate queries for immediate UI update
+        const updatedProjects = [...entries, newProject];
+        setEntries(updatedProjects); // Update local state immediately
+        await updateProfileField('projects', updatedProjects);
         await queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
         await queryClient.invalidateQueries({ queryKey: ['profileProjects', user?.id] });
-        await fetchProjects();
         await refreshProfile();
         toast.success('Project added successfully');
       }
@@ -141,6 +140,7 @@ export const SpecialProjectsManagement = () => {
       resetForm();
     } catch (error) {
       toast.error('An unexpected error occurred');
+      await fetchProjects(); // Rollback on error
     } finally {
       setIsSaving(false);
     }
@@ -166,11 +166,10 @@ export const SpecialProjectsManagement = () => {
     if (!deleteId) return;
     
     const updatedProjects = entries.filter(p => p.id !== deleteId);
+    setEntries(updatedProjects); // Update local state immediately
     await updateProfileField('projects', updatedProjects);
-    // Invalidate queries for immediate UI update
     await queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
     await queryClient.invalidateQueries({ queryKey: ['profileProjects', user?.id] });
-    await fetchProjects();
     await refreshProfile();
     toast.success('Project removed from your profile');
     

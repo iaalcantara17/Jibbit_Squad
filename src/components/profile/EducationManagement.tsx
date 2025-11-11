@@ -95,14 +95,15 @@ export const EducationManagement = () => {
       if (editingId) {
         const updatedEntries = entries.map(e => e.id === editingId ? { ...formData, id: editingId } : e);
         await updateProfileField('education', updatedEntries);
-        await fetchEducation();
+        setEntries(updatedEntries);
         await refreshProfile();
         toast.success('Education entry updated successfully');
         setEditingId(null);
       } else {
         const newEntry = { ...formData, id: crypto.randomUUID() };
-        await updateProfileField('education', [...entries, newEntry]);
-        await fetchEducation();
+        const updatedEntries = [...entries, newEntry];
+        await updateProfileField('education', updatedEntries);
+        setEntries(updatedEntries);
         await refreshProfile();
         toast.success('Education entry added successfully');
       }
@@ -136,7 +137,7 @@ export const EducationManagement = () => {
     
     const updatedEntries = entries.filter(e => e.id !== deleteId);
     await updateProfileField('education', updatedEntries);
-    await fetchEducation();
+    setEntries(updatedEntries);
     await refreshProfile();
     toast.success('Education entry removed from your profile');
     

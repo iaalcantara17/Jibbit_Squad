@@ -92,26 +92,27 @@ export const CertificationsManagement = () => {
     try {
       if (editingId) {
         const updatedCerts = certifications.map(c => c.id === editingId ? { ...formData, id: editingId } : c);
+        setCertifications(updatedCerts); // Update local state immediately
         await updateProfileField('certifications', updatedCerts);
-        // Invalidate queries for immediate UI update
         await queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
         await queryClient.invalidateQueries({ queryKey: ['profileCertifications', user?.id] });
         toast.success('Certification updated successfully');
         setEditingId(null);
       } else {
         const newCert = { ...formData, id: crypto.randomUUID() };
-        await updateProfileField('certifications', [...certifications, newCert]);
-        // Invalidate queries for immediate UI update
+        const updatedCerts = [...certifications, newCert];
+        setCertifications(updatedCerts); // Update local state immediately
+        await updateProfileField('certifications', updatedCerts);
         await queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
         await queryClient.invalidateQueries({ queryKey: ['profileCertifications', user?.id] });
         toast.success('Certification added successfully');
       }
 
       await refreshProfile();
-      await fetchCertifications();
       resetForm();
     } catch (error) {
       toast.error('An unexpected error occurred');
+      await fetchCertifications(); // Rollback on error
     } finally {
       setIsSaving(false);
     }
@@ -135,13 +136,12 @@ export const CertificationsManagement = () => {
     if (!deleteId) return;
     
     const updatedCerts = certifications.filter(c => c.id !== deleteId);
+    setCertifications(updatedCerts); // Update local state immediately
     await updateProfileField('certifications', updatedCerts);
-    // Invalidate queries for immediate UI update
     await queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
     await queryClient.invalidateQueries({ queryKey: ['profileCertifications', user?.id] });
     toast.success('Certification removed from your profile');
     await refreshProfile();
-    await fetchCertifications();
     
     setDeleteId(null);
   };

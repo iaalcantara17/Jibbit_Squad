@@ -69,36 +69,36 @@ export function ResumeBuilder({ resumeId, onSave }: ResumeBuilderProps) {
         ['summary', 'experience', 'skills']
       );
 
-      const raw: any = (result && (result.content || result)) || {};
+      const raw: any = result || {};
       const normalizeTextArray = (val: any) => {
         if (!val) return [] as string[];
-        if (Array.isArray(val)) return val.filter(Boolean);
-        if (typeof val === 'string') return val.split(/\n+|,|•/).map((s: string) => s.replace(/^[-•]\s*/, '').trim()).filter(Boolean);
+        if (Array.isArray(val)) return val.filter(Boolean).map((item: any) => {
+          if (typeof item === 'string') return item;
+          if (typeof item === 'object' && item.content) return item.content;
+          return String(item);
+        });
+        if (typeof val === 'string') return val.split(/\n+/).map((s: string) => s.replace(/^[-•]\s*/, '').trim()).filter(Boolean);
         return [] as string[];
       };
 
       const normalized = {
         summary: {
-          suggestions: normalizeTextArray(raw.summary || raw.SUMMARY || raw.Summary),
+          suggestions: normalizeTextArray(raw.summary),
         },
         experience: {
           bulletPoints: (() => {
-            const exp = raw.experience || raw.Experience;
-            if (!exp) return [] as any[];
-            if (Array.isArray(exp)) {
-              return exp.map((e: any) => ({
-                role: e.role || e.title || e.position || 'Experience',
-                points: normalizeTextArray(e.points || e.bullets || e.content || e),
-                relevance: e.relevance,
-              }));
-            }
-            const points = normalizeTextArray(exp);
-            return [ { role: 'Experience', points } ];
+            const exp = normalizeTextArray(raw.experience);
+            if (exp.length === 0) return [];
+            return exp.map((content: string) => ({
+              role: 'Experience',
+              points: content.split(/\n/).filter(Boolean),
+              relevance: 85,
+            }));
           })(),
         },
         skills: {
-          highlighted: normalizeTextArray(raw.skills || raw.Skills),
-          suggested: normalizeTextArray(raw.suggestedSkills || raw.missingSkills),
+          highlighted: normalizeTextArray(raw.skills),
+          suggested: [],
         },
       };
       
