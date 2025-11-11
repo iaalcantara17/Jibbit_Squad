@@ -65,8 +65,41 @@ export function ResumeBuilder({ resumeId, onSave }: ResumeBuilderProps) {
         selectedJob,
         ['summary', 'experience', 'skills']
       );
+
+      const raw: any = (result && (result.content || result)) || {};
+      const normalizeTextArray = (val: any) => {
+        if (!val) return [] as string[];
+        if (Array.isArray(val)) return val.filter(Boolean);
+        if (typeof val === 'string') return val.split(/\n+|,|•/).map((s: string) => s.replace(/^[-•]\s*/, '').trim()).filter(Boolean);
+        return [] as string[];
+      };
+
+      const normalized = {
+        summary: {
+          suggestions: normalizeTextArray(raw.summary || raw.SUMMARY || raw.Summary),
+        },
+        experience: {
+          bulletPoints: (() => {
+            const exp = raw.experience || raw.Experience;
+            if (!exp) return [] as any[];
+            if (Array.isArray(exp)) {
+              return exp.map((e: any) => ({
+                role: e.role || e.title || e.position || 'Experience',
+                points: normalizeTextArray(e.points || e.bullets || e.content || e),
+                relevance: e.relevance,
+              }));
+            }
+            const points = normalizeTextArray(exp);
+            return [ { role: 'Experience', points } ];
+          })(),
+        },
+        skills: {
+          highlighted: normalizeTextArray(raw.skills || raw.Skills),
+          suggested: normalizeTextArray(raw.suggestedSkills || raw.missingSkills),
+        },
+      };
       
-      setAiResult({ type: 'content', data: result });
+      setAiResult({ type: 'content', data: normalized });
       toast.success('AI content generated successfully!');
       setShowAIDialog(false);
     } catch (error: any) {
@@ -75,7 +108,7 @@ export function ResumeBuilder({ resumeId, onSave }: ResumeBuilderProps) {
       } else if (error.message?.includes('credits')) {
         toast.error("AI credits exhausted. Please add credits to continue.");
       } else {
-        toast.error('Failed to generate content');
+        toast.error(error?.message || 'Failed to generate content');
       }
       console.error('Error:', error);
     } finally {
