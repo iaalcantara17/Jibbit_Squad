@@ -64,8 +64,8 @@ export const JobCard = ({
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <h3 className="font-display font-semibold text-lg truncate">{job.jobTitle || job.title}</h3>
-            <p className="text-muted-foreground truncate">{typeof job.company === 'string' ? job.company : job.company.name}</p>
+            <h3 className="font-display font-semibold text-lg truncate">{job.job_title || (job as any).title}</h3>
+            <p className="text-muted-foreground truncate">{job.company_name || (typeof (job as any).company === 'string' ? (job as any).company : (job as any).company?.name)}</p>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>

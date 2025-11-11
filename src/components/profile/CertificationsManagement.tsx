@@ -87,18 +87,16 @@ export const CertificationsManagement = () => {
       if (editingId) {
         const updatedCerts = certifications.map(c => c.id === editingId ? { ...formData, id: editingId } : c);
         await updateProfileField('certifications', updatedCerts);
-        await fetchCertifications();
-        await refreshProfile();
         toast.success('Certification updated successfully');
         setEditingId(null);
       } else {
         const newCert = { ...formData, id: crypto.randomUUID() };
         await updateProfileField('certifications', [...certifications, newCert]);
-        await fetchCertifications();
-        await refreshProfile();
         toast.success('Certification added successfully');
       }
 
+      await refreshProfile();
+      await fetchCertifications();
       resetForm();
     } catch (error) {
       toast.error('An unexpected error occurred');
@@ -126,9 +124,9 @@ export const CertificationsManagement = () => {
     
     const updatedCerts = certifications.filter(c => c.id !== deleteId);
     await updateProfileField('certifications', updatedCerts);
-    await fetchCertifications();
-    await refreshProfile();
     toast.success('Certification removed from your profile');
+    await refreshProfile();
+    await fetchCertifications();
     
     setDeleteId(null);
   };

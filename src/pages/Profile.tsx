@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from '@/components/ui/use-toast';
 import { api } from '@/lib/api';
+import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Save, User, Briefcase, GraduationCap, Award, FolderOpen, Camera, X } from 'lucide-react';
 import { EmploymentHistory } from '@/components/profile/EmploymentHistory';
 import { SkillsManagement } from '@/components/profile/SkillsManagement';
@@ -72,9 +73,10 @@ const Profile = () => {
           location: userProfile?.location || '',
           professionalHeadline: userProfile?.professional_headline || '',
           bio: userProfile?.bio || '',
-          industry: '',
-          experienceLevel: '',
+          industry: (userProfile as any)?.industry || '',
+          experienceLevel: (userProfile as any)?.experience_level || '',
         });
+        setProfilePicture((userProfile as any)?.avatar_url || null);
       }
     };
     
@@ -118,64 +120,71 @@ const Profile = () => {
   };
 
   const handleUploadPicture = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile || !user) return;
 
-    setUploadProgress(0);
+    setUploadProgress(10);
     
-    // TODO: Implement actual upload when backend endpoint is ready
-    // const formData = new FormData();
-    // formData.append('profilePicture', selectedFile);
-    
-    // Simulate upload progress
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
-        return prev + 10;
-      });
-    }, 100);
+    try {
+      const fileExt = selectedFile.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      
+      setUploadProgress(30);
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('profile-pictures')
+        .upload(fileName, selectedFile, { upsert: true });
 
-    setTimeout(() => {
-      clearInterval(interval);
+      if (uploadError) throw uploadError;
+      
+      setUploadProgress(60);
+      
+      const { data: urlData } = supabase.storage
+        .from('profile-pictures')
+        .getPublicUrl(fileName);
+      
+      setUploadProgress(80);
+      
+      await api.profile.update({ avatar_url: urlData.publicUrl });
+      await refreshProfile();
+      
       setUploadProgress(100);
-      toast({
-        title: 'Upload Ready',
-        description: 'Profile picture upload will be available once backend endpoint is configured.',
-      });
       setSelectedFile(null);
+      
+      toast({
+        title: 'Success',
+        description: 'Profile picture uploaded successfully',
+      });
+      
+      setTimeout(() => setUploadProgress(0), 500);
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to upload profile picture',
+        variant: 'destructive',
+      });
       setUploadProgress(0);
-    }, 1000);
-
-    // Actual implementation:
-    // try {
-    //   const response = await fetch('http://34.207.119.121:5000/api/users/me/picture', {
-    //     method: 'POST',
-    //     headers: {
-    //       'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-    //     },
-    //     body: formData,
-    //   });
-    //   
-    //   if (response.ok) {
-    //     await refreshProfile();
-    //     toast({ title: 'Success', description: 'Profile picture updated' });
-    //   }
-    // } catch (error) {
-    //   toast({ title: 'Error', description: 'Failed to upload', variant: 'destructive' });
-    // }
+    }
   };
 
-  const handleRemovePicture = () => {
-    setProfilePicture(null);
-    setSelectedFile(null);
-    
-    // TODO: Call API to remove picture from backend
-    toast({
-      title: 'Picture removed',
-      description: 'Profile picture has been removed',
-    });
+  const handleRemovePicture = async () => {
+    try {
+      await api.profile.update({ avatar_url: null });
+      await refreshProfile();
+      setProfilePicture(null);
+      setSelectedFile(null);
+      
+      toast({
+        title: 'Picture removed',
+        description: 'Profile picture has been removed',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to remove profile picture',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -246,6 +255,8 @@ const Profile = () => {
           location: basicInfo.location?.trim(),
           professional_headline: basicInfo.professionalHeadline?.trim(),
           bio: basicInfo.bio?.trim(),
+          industry: basicInfo.industry?.trim(),
+          experience_level: basicInfo.experienceLevel?.trim(),
         };
 
       await api.profile.update(updateData);
@@ -341,7 +352,10 @@ const Profile = () => {
                   <div className="flex flex-col sm:flex-row items-center gap-6">
                     <div className="relative">
                       <Avatar className="h-32 w-32">
+                        <AvatarImage src={profilePicture || undefined} />
+                        <AvatarFallback>
                           {userProfile?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
+                        </AvatarFallback>
                       </Avatar>
                       {profilePicture && (
                         <Button

@@ -107,17 +107,18 @@ export const JobForm = ({ initialData, onSuccess, onCancel }: JobFormProps) => {
       // Automatically trigger company research for new jobs
       if (!initialData && data.company) {
         try {
-          await api.company.research(data.company, data.jobPostingUrl);
+          await api.company.research(data.company, data.jobPostingUrl || '');
         } catch (researchError) {
           console.error('Error triggering company research:', researchError);
           // Don't fail job creation if research fails
         }
       }
 
-      toast.success('Job added successfully');
+      toast.success(initialData ? 'Job updated successfully' : 'Job added successfully');
       onSuccess?.();
-    } catch (error) {
-      toast.error('An error occurred while adding the job');
+    } catch (error: any) {
+      console.error('Job submission error:', error);
+      toast.error(error?.message || 'An error occurred while saving the job');
     } finally {
       setIsSubmitting(false);
     }

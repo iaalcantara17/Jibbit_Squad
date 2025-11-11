@@ -588,14 +588,17 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           bio: string | null
           certifications: Json | null
           created_at: string | null
           education: Json | null
           email: string | null
           employment_history: Json | null
+          experience_level: string | null
           github_url: string | null
           id: string
+          industry: string | null
           linkedin_url: string | null
           location: string | null
           name: string | null
@@ -608,14 +611,17 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          avatar_url?: string | null
           bio?: string | null
           certifications?: Json | null
           created_at?: string | null
           education?: Json | null
           email?: string | null
           employment_history?: Json | null
+          experience_level?: string | null
           github_url?: string | null
           id?: string
+          industry?: string | null
           linkedin_url?: string | null
           location?: string | null
           name?: string | null
@@ -628,14 +634,17 @@ export type Database = {
           user_id: string
         }
         Update: {
+          avatar_url?: string | null
           bio?: string | null
           certifications?: Json | null
           created_at?: string | null
           education?: Json | null
           email?: string | null
           employment_history?: Json | null
+          experience_level?: string | null
           github_url?: string | null
           id?: string
+          industry?: string | null
           linkedin_url?: string | null
           location?: string | null
           name?: string | null

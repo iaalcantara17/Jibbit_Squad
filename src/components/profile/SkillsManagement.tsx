@@ -82,18 +82,16 @@ export const SkillsManagement = () => {
       if (editingId) {
         const updatedSkills = skills.map(s => s.id === editingId ? { ...formData, id: editingId } : s);
         await updateProfileField('skills', updatedSkills);
-        await fetchSkills();
-        await refreshProfile();
         toast.success('Skill updated successfully');
         setEditingId(null);
       } else {
         const newSkill = { ...formData, id: crypto.randomUUID() };
         await updateProfileField('skills', [...skills, newSkill]);
-        await fetchSkills();
-        await refreshProfile();
         toast.success('Skill added successfully');
       }
 
+      await refreshProfile();
+      await fetchSkills();
       resetForm();
     } catch (error) {
       toast.error('An unexpected error occurred');
@@ -115,9 +113,9 @@ export const SkillsManagement = () => {
   const handleDelete = async (id: string) => {
     const updatedSkills = skills.filter(s => s.id !== id);
     await updateProfileField('skills', updatedSkills);
-    await fetchSkills();
-    await refreshProfile();
     toast.success('Skill removed from your profile');
+    await refreshProfile();
+    await fetchSkills();
   };
 
   const handleMoveToCategory = async (skillId: string, newCategory: Skill['category']) => {

@@ -307,17 +307,39 @@ export function ResumeBuilder({ resumeId, onSave }: ResumeBuilderProps) {
                 </p>
               ) : (
                 sections.map((section, index) => (
-                  <Card key={index}>
-                    <CardContent className="p-4">
+                  <Card key={section.id || index}>
+                    <CardContent className="p-4 space-y-3">
                       <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="font-medium">{section.title}</h4>
-                          <p className="text-sm text-muted-foreground">{section.type}</p>
-                        </div>
-                        <Button size="sm" variant="ghost">
+                        <Input
+                          value={section.title}
+                          onChange={(e) => {
+                            const updated = [...sections];
+                            updated[index].title = e.target.value;
+                            setSections(updated);
+                          }}
+                          className="font-medium max-w-xs"
+                        />
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={() => {
+                            setSections(sections.filter((_, i) => i !== index));
+                            toast.success('Section removed');
+                          }}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
+                      <Textarea
+                        value={section.content}
+                        onChange={(e) => {
+                          const updated = [...sections];
+                          updated[index].content = e.target.value;
+                          setSections(updated);
+                        }}
+                        placeholder="Enter section content..."
+                        rows={4}
+                      />
                     </CardContent>
                   </Card>
                 ))
