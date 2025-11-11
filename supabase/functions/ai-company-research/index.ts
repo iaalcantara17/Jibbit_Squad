@@ -39,20 +39,26 @@ serve(async (req) => {
     }
 
     // Build research prompt
-    const prompt = `Research and provide comprehensive information about ${companyName}${companyWebsite ? ` (${companyWebsite})` : ''}:
+    const prompt = `Research ${companyName}${companyWebsite ? ` (${companyWebsite})` : ''}.
 
-Please provide:
-1. Company Overview (size, industry, headquarters, founding year)
-2. Mission & Values (company mission statement and core values)
-3. Products & Services (main offerings and target market)
-4. Recent News (last 6 months - funding, product launches, expansions, awards)
-5. Company Culture (work environment, employee benefits, diversity initiatives)
-6. Leadership (key executives and their backgrounds)
-7. Market Position (competitors, market share, growth trajectory)
-8. Interview Process (typical hiring process and what they look for)
+Focus on CURRENT and RECENT information (last 6 months):
 
-Format the response as a structured JSON object with these sections.
-Be factual and current. If information is not available, indicate that clearly.`;
+1. Industry classification and current market position
+2. Company mission statement or core values (as stated today, not founding history)
+3. Recent significant developments:
+   - Product launches or updates
+   - Funding rounds or financial news
+   - Major partnerships or acquisitions
+   - Awards or recognition
+   - Expansion plans or new offices
+
+Avoid:
+- Company founding stories unless recent (< 1 year)
+- Executive biographies unless recently appointed
+- Generic historical information
+- Outdated news (> 6 months old)
+
+Be factual, current, and actionable for a job applicant researching before an interview.`;
 
     // Call Lovable AI
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -65,7 +71,7 @@ Be factual and current. If information is not available, indicate that clearly.`
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: 'You are a research assistant specializing in company intelligence for job seekers. Provide accurate, up-to-date company information.' },
+          { role: 'system', content: 'You are a company research analyst focused on current, relevant information for job seekers. Prioritize recent developments over historical data.' },
           { role: 'user', content: prompt }
         ],
       }),

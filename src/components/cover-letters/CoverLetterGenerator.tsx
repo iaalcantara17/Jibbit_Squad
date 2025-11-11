@@ -100,16 +100,30 @@ export function CoverLetterGenerator() {
       
       let generatedContent = result.content;
 
-      // Integrate company research at the beginning
+      // Integrate company research at the beginning with real mission text
       if (companyResearch) {
-        const companyContext = `\n\nREGARDING ${companyResearch.companyInfo?.name?.toUpperCase() || 'THE COMPANY'}:\n\nI am writing to express my strong interest in this position. ${companyResearch.companyInfo?.name || 'Your company'} operates in ${companyResearch.companyInfo?.industry || 'the industry'}, and I am particularly drawn to ${companyResearch.mission || 'your mission and values'}.\n\n`;
+        const companyName = companyResearch.companyInfo?.name || selectedJobData?.company_name || 'the company';
+        const industry = companyResearch.companyInfo?.industry || 'technology';
+        const mission = companyResearch.mission || companyResearch.companyInfo?.mission || '';
+        
+        let researchSection = `\n\nI am particularly drawn to ${companyName}'s position in the ${industry} sector`;
+        
+        if (mission) {
+          researchSection += `. Your mission — ${mission} — resonates deeply with my professional values and career goals`;
+        }
         
         if (companyResearch.recentNews && companyResearch.recentNews.length > 0) {
-          const newsInsert = `I was impressed to learn about ${companyResearch.recentNews[0].title}. ${companyResearch.recentNews[0].summary}\n\n`;
-          generatedContent = generatedContent.replace(/^([^\n]+\n\n)/, `$1${companyContext}${newsInsert}`);
-        } else {
-          generatedContent = generatedContent.replace(/^([^\n]+\n\n)/, `$1${companyContext}`);
+          const news = companyResearch.recentNews[0];
+          researchSection += `. I was especially impressed to learn about ${news.title}`;
+          if (news.summary) {
+            researchSection += ` — ${news.summary}`;
+          }
         }
+        
+        researchSection += '.\n\n';
+        
+        // Insert after the opening paragraph
+        generatedContent = generatedContent.replace(/^([^\n]+\n\n)/, `$1${researchSection}`);
       }
 
       setContent(generatedContent);
@@ -130,6 +144,13 @@ export function CoverLetterGenerator() {
       setIsGenerating(false);
     }
   };
+
+  // Re-generate when tone changes
+  useEffect(() => {
+    if (content && selectedJob && !isGenerating) {
+      handleGenerate();
+    }
+  }, [tone]);
 
   const handleSave = async () => {
     if (!title || !content) {
@@ -320,9 +341,21 @@ export function CoverLetterGenerator() {
                 <Copy className="h-4 w-4 mr-2" />
                 Copy
               </Button>
-              <Button variant="outline" disabled={!content}>
+              <Button 
+                variant="outline" 
+                onClick={() => handleExport('pdf')} 
+                disabled={!content}
+              >
                 <Download className="h-4 w-4 mr-2" />
-                Export PDF
+                PDF
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => handleExport('docx')} 
+                disabled={!content}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                DOCX
               </Button>
               <Button onClick={handleSave} disabled={!content}>
                 <Save className="h-4 w-4 mr-2" />

@@ -16,18 +16,29 @@ interface Props {
 export const AIContentGenerationPanel = ({ jobId, resumeId, onAccept }: Props) => {
   const [variations, setVariations] = useState<Array<{ content: string; atsScore: number; keywords: string[] }>>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [contentType, setContentType] = useState<'summary' | 'experience' | 'skills'>('summary');
 
   const generateMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('ai-resume-generate', {
-        body: { resume_id: resumeId, job_id: jobId },
+    mutationFn: async (type: 'summary' | 'experience' | 'skills') => {
+      const { data, error } = await supabase.functions.invoke('ai-resume-content', {
+        body: { jobId, sections: [type] },
       });
       if (error) throw error;
       return data;
     },
     onSuccess: (data) => {
       setVariations(data.variations || []);
-      toast.success('Generated content variations');
+      toast.success(`Generated ${contentType} content`);
+    },
+    onError: (error: any) => {
+      const errorMsg = error.message || 'Unknown error';
+      if (errorMsg.includes('Rate limit') || errorMsg.includes('429')) {
+        toast.error("Rate limit exceeded. Please try again later.");
+      } else if (errorMsg.includes('credits') || errorMsg.includes('402')) {
+        toast.error("AI credits exhausted. Please add credits to continue.");
+      } else {
+        toast.error(`Failed to generate content: ${errorMsg}`);
+      }
     },
   });
 
@@ -40,17 +51,54 @@ export const AIContentGenerationPanel = ({ jobId, resumeId, onAccept }: Props) =
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button
-            onClick={() => generateMutation.mutate()}
+            onClick={() => {
+              setContentType('summary');
+              generateMutation.mutate('summary');
+            }}
             disabled={generateMutation.isPending}
+            variant={contentType === 'summary' ? 'default' : 'outline'}
+            size="sm"
           >
-            {generateMutation.isPending ? (
+            {generateMutation.isPending && contentType === 'summary' ? (
               <RefreshCw className="h-4 w-4 animate-spin mr-2" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
             )}
-            Generate Variations
+            Generate Summary
+          </Button>
+          <Button
+            onClick={() => {
+              setContentType('experience');
+              generateMutation.mutate('experience');
+            }}
+            disabled={generateMutation.isPending}
+            variant={contentType === 'experience' ? 'default' : 'outline'}
+            size="sm"
+          >
+            {generateMutation.isPending && contentType === 'experience' ? (
+              <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <Sparkles className="h-4 w-4 mr-2" />
+            )}
+            Generate Experience
+          </Button>
+          <Button
+            onClick={() => {
+              setContentType('skills');
+              generateMutation.mutate('skills');
+            }}
+            disabled={generateMutation.isPending}
+            variant={contentType === 'skills' ? 'default' : 'outline'}
+            size="sm"
+          >
+            {generateMutation.isPending && contentType === 'skills' ? (
+              <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <Sparkles className="h-4 w-4 mr-2" />
+            )}
+            Generate Skills
           </Button>
           {jobId && (
             <Badge variant="outline">Tailored for job</Badge>
