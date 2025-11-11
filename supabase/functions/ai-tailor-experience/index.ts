@@ -31,7 +31,7 @@ serve(async (req) => {
       });
     }
 
-    // Fetch user profile
+    // Fetch user profile with employment history
     const { data: profile } = await supabase
       .from('profiles')
       .select('*')
@@ -39,7 +39,7 @@ serve(async (req) => {
       .maybeSingle();
 
     if (!profile) {
-      return new Response(JSON.stringify({ error: 'Please complete your profile first.' }), {
+      return new Response(JSON.stringify({ error: { code: 'PROFILE_REQUIRED', message: 'Please complete your profile first.' } }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -54,56 +54,33 @@ serve(async (req) => {
       .single();
 
     if (!job) {
-      return new Response(JSON.stringify({ error: 'Job not found' }), {
+      return new Response(JSON.stringify({ error: { code: 'JOB_NOT_FOUND', message: 'Job not found' } }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const jobDescription = job.job_description || `${job.job_title} at ${job.company_name}`;
-    const currentContent = profile.bio || '';
+    const experiences = profile.employment_history || [];
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const systemPrompt = `You are an expert career coach specializing in tailoring cover letters. Analyze the user's experience and suggest specific improvements to highlight the most relevant experiences for the job.
+    const systemPrompt = `You are an expert resume consultant. Tailor each resume experience entry to match the job requirements, emphasizing relevant achievements and keywords.`;
 
-Your task:
-1. Compare the job description with the user's profile (employment history, skills, projects, education)
-2. Identify sections in the current cover letter that could be enhanced to better highlight relevant experience
-3. Provide specific rewrite suggestions that:
-   - Emphasize quantifiable achievements related to the job requirements
-   - Use keywords from the job description naturally
-   - Showcase transferable skills and relevant projects
-   - Maintain the authentic voice and tone
+    const userPrompt = `Job: ${job.job_title} at ${job.company_name}
+Job Description: ${jobDescription}
 
-Return suggestions in this format:
-{
-  "suggestions": [
-    {
-      "original": "exact text from cover letter to replace",
-      "highlighted": "improved version with relevant experience emphasized",
-      "relevance": "high|medium|low",
-      "reason": "brief explanation of why this change improves the cover letter"
-    }
-  ]
-}`;
+User's Experience Entries:
+${experiences.map((exp: any, idx: number) => `
+Entry ${idx}: ${exp.company} - ${exp.role}
+${exp.description || exp.summary || ''}`).join('\n')}
 
-    const userPrompt = `Job Description:
-${jobDescription}
-
-Current Cover Letter Content:
-${currentContent}
-
-User Profile:
-Employment History: ${JSON.stringify(profile.employment_history || [])}
-Skills: ${JSON.stringify(profile.skills || [])}
-Projects: ${JSON.stringify(profile.projects || [])}
-Education: ${JSON.stringify(profile.education || [])}
-
-Provide 3-5 targeted suggestions to better highlight relevant experience.`;
+For each experience entry, provide:
+1. Relevance score (0-100)
+2. Tailored markdown description with job-specific keywords and quantifiable achievements`;
 
     console.log('Calling Lovable AI for experience tailoring...');
 
@@ -122,34 +99,46 @@ Provide 3-5 targeted suggestions to better highlight relevant experience.`;
         tools: [{
           type: "function",
           function: {
-            name: "provide_suggestions",
-            description: "Provide experience highlighting suggestions",
+            name: "tailor_entries",
+            description: "Tailor resume experience entries for job",
             parameters: {
               type: "object",
               properties: {
-                suggestions: {
+                entries: {
                   type: "array",
                   items: {
                     type: "object",
                     properties: {
-                      original: { type: "string" },
-                      highlighted: { type: "string" },
-                      relevance: { type: "string", enum: ["high", "medium", "low"] },
-                      reason: { type: "string" }
+                      experience_id: { type: "string", description: "Use Entry index as uuid placeholder" },
+                      relevance_score: { type: "number", minimum: 0, maximum: 100 },
+                      suggested_markdown: { type: "string" }
                     },
-                    required: ["original", "highlighted", "relevance", "reason"]
+                    required: ["experience_id", "relevance_score", "suggested_markdown"]
                   }
                 }
               },
-              required: ["suggestions"]
+              required: ["entries"],
+              additionalProperties: false
             }
           }
         }],
-        tool_choice: { type: "function", function: { name: "provide_suggestions" } }
+        tool_choice: { type: "function", function: { name: "tailor_entries" } }
       }),
     });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: { code: 'RATE_LIMIT', message: 'Rate limit exceeded' } }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: { code: 'PAYMENT_REQUIRED', message: 'AI credits exhausted' } }), {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       const errorText = await response.text();
       console.error('AI API error:', response.status, errorText);
       throw new Error(`AI API request failed: ${response.status}`);
@@ -161,17 +150,16 @@ Provide 3-5 targeted suggestions to better highlight relevant experience.`;
     const toolCall = data.choices[0]?.message?.tool_calls?.[0];
     const result = toolCall?.function?.arguments 
       ? JSON.parse(toolCall.function.arguments)
-      : { suggestions: [] };
+      : { entries: [] };
 
-    // Format for resume experience tailoring
-    const tailored = result.suggestions?.map((s: any) => ({
-      original: s.original,
-      improved: s.highlighted,
-      relevance: s.relevance,
-      reason: s.reason
-    })) || [];
+    // Map experience IDs to actual UUIDs from profile
+    const mappedEntries = result.entries.map((entry: any, idx: number) => ({
+      experience_id: experiences[idx]?.id || `exp_${idx}`,
+      relevance_score: entry.relevance_score || 0,
+      suggested_markdown: entry.suggested_markdown || ''
+    }));
 
-    return new Response(JSON.stringify({ tailored }), {
+    return new Response(JSON.stringify({ entries: mappedEntries }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
@@ -179,7 +167,7 @@ Provide 3-5 targeted suggestions to better highlight relevant experience.`;
     console.error('Error in ai-tailor-experience:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: { code: 'INTERNAL_ERROR', message: errorMessage } }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

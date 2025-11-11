@@ -386,6 +386,39 @@ export type Database = {
           },
         ]
       }
+      email_integrations: {
+        Row: {
+          access_token: string
+          created_at: string
+          expires_at: string
+          id: string
+          provider: string
+          refresh_token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          provider: string
+          refresh_token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          provider?: string
+          refresh_token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       email_tracking: {
         Row: {
           confidence_score: number | null
@@ -393,10 +426,13 @@ export type Database = {
           detected_status: string | null
           email_body: string | null
           email_subject: string | null
+          from_addr: string | null
           id: string
           job_id: string | null
           metadata: Json | null
           processed_at: string | null
+          provider_msg_id: string | null
+          received_at: string | null
           sender_email: string | null
           user_id: string
         }
@@ -406,10 +442,13 @@ export type Database = {
           detected_status?: string | null
           email_body?: string | null
           email_subject?: string | null
+          from_addr?: string | null
           id?: string
           job_id?: string | null
           metadata?: Json | null
           processed_at?: string | null
+          provider_msg_id?: string | null
+          received_at?: string | null
           sender_email?: string | null
           user_id: string
         }
@@ -419,10 +458,13 @@ export type Database = {
           detected_status?: string | null
           email_body?: string | null
           email_subject?: string | null
+          from_addr?: string | null
           id?: string
           job_id?: string | null
           metadata?: Json | null
           processed_at?: string | null
+          provider_msg_id?: string | null
+          received_at?: string | null
           sender_email?: string | null
           user_id?: string
         }
@@ -434,6 +476,7 @@ export type Database = {
           common_questions: Json | null
           company_research: Json | null
           created_at: string | null
+          duration_minutes: number | null
           id: string
           interview_date: string | null
           interview_type: string | null
@@ -444,6 +487,8 @@ export type Database = {
           notes: string | null
           preparation_status: string | null
           reminder_sent: boolean | null
+          scheduled_start: string | null
+          status: string | null
           updated_at: string | null
           user_id: string
         }
@@ -452,6 +497,7 @@ export type Database = {
           common_questions?: Json | null
           company_research?: Json | null
           created_at?: string | null
+          duration_minutes?: number | null
           id?: string
           interview_date?: string | null
           interview_type?: string | null
@@ -462,6 +508,8 @@ export type Database = {
           notes?: string | null
           preparation_status?: string | null
           reminder_sent?: boolean | null
+          scheduled_start?: string | null
+          status?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -470,6 +518,7 @@ export type Database = {
           common_questions?: Json | null
           company_research?: Json | null
           created_at?: string | null
+          duration_minutes?: number | null
           id?: string
           interview_date?: string | null
           interview_type?: string | null
@@ -480,6 +529,8 @@ export type Database = {
           notes?: string | null
           preparation_status?: string | null
           reminder_sent?: boolean | null
+          scheduled_start?: string | null
+          status?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -820,6 +871,79 @@ export type Database = {
         }
         Relationships: []
       }
+      resume_comments: {
+        Row: {
+          author_name: string
+          body: string
+          created_at: string
+          id: string
+          share_id: string
+        }
+        Insert: {
+          author_name: string
+          body: string
+          created_at?: string
+          id?: string
+          share_id: string
+        }
+        Update: {
+          author_name?: string
+          body?: string
+          created_at?: string
+          id?: string
+          share_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resume_comments_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: false
+            referencedRelation: "resume_shares_v2"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resume_experience_variants: {
+        Row: {
+          accepted: boolean
+          content_markdown: string
+          created_at: string
+          id: string
+          job_id: string | null
+          relevance_score: number
+          resume_experience_id: string
+          user_id: string
+        }
+        Insert: {
+          accepted?: boolean
+          content_markdown: string
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          relevance_score: number
+          resume_experience_id: string
+          user_id: string
+        }
+        Update: {
+          accepted?: boolean
+          content_markdown?: string
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          relevance_score?: number
+          resume_experience_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resume_experience_variants_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       resume_shares: {
         Row: {
           access_level: string
@@ -852,6 +976,69 @@ export type Database = {
           share_token?: string
           shared_with_email?: string
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      resume_shares_v2: {
+        Row: {
+          can_comment: boolean
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          resume_id: string
+          share_token: string
+          user_id: string
+        }
+        Insert: {
+          can_comment?: boolean
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          resume_id: string
+          share_token: string
+          user_id: string
+        }
+        Update: {
+          can_comment?: boolean
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          resume_id?: string
+          share_token?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      resume_templates: {
+        Row: {
+          content_markdown: string
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_markdown: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_markdown?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

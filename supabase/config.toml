@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.ai-grammar-check]
 verify_jwt = true
+
+[functions.ai-company-news]
+verify_jwt = true

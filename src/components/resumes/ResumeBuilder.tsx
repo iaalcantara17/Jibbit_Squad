@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sparkles, Download, Eye, Save, Plus, Trash2, FileText } from 'lucide-react';
@@ -13,6 +12,10 @@ import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { AIResultsPanel } from './AIResultsPanel';
 import { useExport } from '@/hooks/useExport';
+import { ResumeTemplateManager } from './ResumeTemplateManager';
+import { ResumeSkillsOptimizer } from './ResumeSkillsOptimizer';
+import { ExperienceTailoringPanel } from './ExperienceTailoringPanel';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ResumeBuilderProps {
   resumeId?: string;
@@ -239,6 +242,30 @@ export function ResumeBuilder({ resumeId, onSave }: ResumeBuilderProps) {
     }
   };
 
+  const mockExperiences = sections
+    .filter(s => s.type === 'experience')
+    .map((s, idx) => ({ id: s.id || `exp_${idx}`, company: 'Company', role: 'Role', description: s.content }));
+
+  const handleApplySkills = (skills: string[]) => {
+    const updatedSections = [...sections];
+    const skillsIdx = updatedSections.findIndex(s => s.type === 'skills');
+    if (skillsIdx >= 0) {
+      updatedSections[skillsIdx].content = skills.join(', ');
+    } else {
+      updatedSections.push({ id: `skills_${Date.now()}`, type: 'skills', title: 'Skills', content: skills.join(', '), order: sections.length, isVisible: true });
+    }
+    setSections(updatedSections);
+  };
+
+  const handleAcceptExperienceSuggestion = (experienceId: string, newContent: string) => {
+    const updatedSections = [...sections];
+    const expIdx = updatedSections.findIndex(s => s.id === experienceId);
+    if (expIdx >= 0) {
+      updatedSections[expIdx].content = newContent;
+      setSections(updatedSections);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* AI Results Panel */}
@@ -250,6 +277,15 @@ export function ResumeBuilder({ resumeId, onSave }: ResumeBuilderProps) {
         />
       )}
 
+      <Tabs defaultValue="builder" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="builder">Builder</TabsTrigger>
+          <TabsTrigger value="templates">Templates</TabsTrigger>
+          <TabsTrigger value="skills">Skills</TabsTrigger>
+          <TabsTrigger value="experience">Experience</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="builder" className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Resume Builder</CardTitle>
@@ -396,6 +432,55 @@ export function ResumeBuilder({ resumeId, onSave }: ResumeBuilderProps) {
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="templates">
+          <ResumeTemplateManager onTemplateSelect={(template) => {
+            const newSection = {
+              id: `section_${Date.now()}`,
+              type: 'imported',
+              title: template.name,
+              content: template.content_markdown,
+              order: sections.length,
+              isVisible: true
+            };
+            setSections([...sections, newSection]);
+            toast.success(`Template "${template.name}" applied`);
+          }} />
+        </TabsContent>
+
+        <TabsContent value="skills">
+          {selectedJob ? (
+            <ResumeSkillsOptimizer
+              jobId={selectedJob}
+              currentSkills={sections.find(s => s.type === 'skills')?.content.split(',').map((s: string) => s.trim()).filter(Boolean) || []}
+              onApplySkills={handleApplySkills}
+            />
+          ) : (
+            <Card>
+              <CardContent className="py-8 text-center text-muted-foreground">
+                Please select a job first to optimize skills
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="experience">
+          {selectedJob && mockExperiences.length > 0 ? (
+            <ExperienceTailoringPanel
+              jobId={selectedJob}
+              experiences={mockExperiences}
+              onAcceptSuggestion={handleAcceptExperienceSuggestion}
+            />
+          ) : (
+            <Card>
+              <CardContent className="py-8 text-center text-muted-foreground">
+                {!selectedJob ? 'Please select a job first to tailor experiences' : 'No experience sections found'}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* AI Generation Dialog */}
       <Dialog open={showAIDialog} onOpenChange={setShowAIDialog}>

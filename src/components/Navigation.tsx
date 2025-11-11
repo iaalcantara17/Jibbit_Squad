@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { Menu, X, LogOut, User, Target, FileText, Mail, BarChart } from 'lucide-react';
+import { Menu, X, LogOut, User, Target, FileText, Mail, BarChart, Settings, Inbox } from 'lucide-react';
 import { useState } from 'react';
 import logo from '@/assets/logo.png';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -76,6 +76,24 @@ export const Navigation = () => {
               >
                 <BarChart className="inline h-4 w-4 mr-1" />
                 Analytics
+              </Link>
+              <Link
+                to="/automation"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  isActive('/automation') ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                <Settings className="inline h-4 w-4 mr-1" />
+                Automation
+              </Link>
+              <Link
+                to="/email"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  isActive('/email') ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                <Inbox className="inline h-4 w-4 mr-1" />
+                Email
               </Link>
               <Link
                 to="/profile"
@@ -184,6 +202,30 @@ export const Navigation = () => {
                 >
                   <BarChart className="inline h-4 w-4 mr-1" />
                   Analytics
+                </Link>
+                <Link
+                  to="/automation"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/automation')
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <Settings className="inline h-4 w-4 mr-1" />
+                  Automation
+                </Link>
+                <Link
+                  to="/email"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/email')
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <Inbox className="inline h-4 w-4 mr-1" />
+                  Email
                 </Link>
                 <Link
                   to="/profile"

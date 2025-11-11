@@ -11,6 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { useExport } from '@/hooks/useExport';
+import { CoverLetterResearchInjector } from './CoverLetterResearchInjector';
+import { CoverLetterExportExtended } from './CoverLetterExportExtended';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const TEMPLATES = [
   { id: 'formal', name: 'Formal', description: 'Traditional business letter format' },
@@ -156,7 +159,17 @@ export function CoverLetterGenerator() {
     }
   };
 
+  const selectedJobData = jobs.find(j => j.id === selectedJob);
+
   return (
+    <Tabs defaultValue="generator" className="w-full">
+      <TabsList className="grid w-full grid-cols-3">
+        <TabsTrigger value="generator">Generator</TabsTrigger>
+        <TabsTrigger value="research">Research</TabsTrigger>
+        <TabsTrigger value="export">Export</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="generator" className="space-y-6">
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Configuration Panel */}
       <Card>
@@ -353,5 +366,42 @@ export function CoverLetterGenerator() {
         </DialogContent>
       </Dialog>
     </div>
+      </TabsContent>
+
+      <TabsContent value="research">
+        {selectedJob && selectedJobData ? (
+          <CoverLetterResearchInjector
+            companyName={selectedJobData.company_name}
+            onContentUpdate={(enriched) => {
+              setContent(enriched);
+              toast.success('Research injected into cover letter');
+            }}
+            initialContent={content}
+          />
+        ) : (
+          <Card>
+            <CardContent className="py-8 text-center text-muted-foreground">
+              Please select a job and generate a cover letter first
+            </CardContent>
+          </Card>
+        )}
+      </TabsContent>
+
+      <TabsContent value="export">
+        {content ? (
+          <CoverLetterExportExtended
+            content={content}
+            jobTitle={selectedJobData?.job_title || 'Position'}
+            companyName={selectedJobData?.company_name || 'Company'}
+          />
+        ) : (
+          <Card>
+            <CardContent className="py-8 text-center text-muted-foreground">
+              Generate a cover letter first to enable export options
+            </CardContent>
+          </Card>
+        )}
+      </TabsContent>
+    </Tabs>
   );
 }
