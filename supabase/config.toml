@@ -1,0 +1,52 @@
+project_id = "fzckeizrrolxgakekzhe"
+
+[functions.send-notification-email]
+verify_jwt = true
+
+[functions.check-grammar]
+verify_jwt = true
+
+[functions.calendar-sync]
+verify_jwt = true
+
+[functions.send-daily-notifications]
+verify_jwt = false
+
+[functions.ai-resume-generate]
+verify_jwt = true
+
+[functions.ai-optimize-skills]
+verify_jwt = true
+
+[functions.ai-tailor-experience]
+verify_jwt = true
+
+[functions.ai-cover-letter-generate]
+verify_jwt = true
+
+[functions.ai-resume-content]
+verify_jwt = true
+
+[functions.ai-cover-letter]
+verify_jwt = true
+
+[functions.ai-company-research]
+verify_jwt = true
+
+[functions.ai-job-match]
+verify_jwt = true
+
+[functions.ai-job-import]
+verify_jwt = true
+
+[functions.ai-job-match-score]
+verify_jwt = true
+
+[functions.ai-skills-gap]
+verify_jwt = true
+
+[functions.ai-salary-research]
+verify_jwt = true
+
+[functions.ai-interview-prep]
+verify_jwt = true
