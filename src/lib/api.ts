@@ -363,9 +363,9 @@ export const api = {
       if (error) throw error;
     },
 
-    generate: async (jobId: string, tone?: string, template?: string) => {
-      const { data, error } = await supabase.functions.invoke('ai-cover-letter', {
-        body: { jobId, tone: tone || 'professional', template: template || 'formal' }
+    generate: async (jobId: string, tone?: string, template?: string, researchContext?: string) => {
+      const { data, error } = await supabase.functions.invoke('ai-cover-letter-generate', {
+        body: { jobId, tone: tone || 'professional', template: template || 'formal', researchContext }
       });
 
       if (error) throw error;

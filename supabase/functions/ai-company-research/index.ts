@@ -38,27 +38,36 @@ serve(async (req) => {
       });
     }
 
-    // Build research prompt
-    const prompt = `Research ${companyName}${companyWebsite ? ` (${companyWebsite})` : ''}.
+    // Build research prompt with strict relevance criteria
+    const prompt = `Research ${companyName}${companyWebsite ? ` (${companyWebsite})` : ''} for a job application.
 
-Focus on CURRENT and RECENT information (last 6 months):
+STRICT REQUIREMENTS - Focus ONLY on:
 
-1. Industry classification and current market position
-2. Company mission statement or core values (as stated today, not founding history)
-3. Recent significant developments:
-   - Product launches or updates
-   - Funding rounds or financial news
-   - Major partnerships or acquisitions
-   - Awards or recognition
-   - Expansion plans or new offices
+1. **Current Industry Position** (2024-2025):
+   - What industry/sector they operate in TODAY
+   - Current market position and competitive advantages
+   - Scale and scope of operations NOW
 
-Avoid:
-- Company founding stories unless recent (< 1 year)
-- Executive biographies unless recently appointed
-- Generic historical information
-- Outdated news (> 6 months old)
+2. **Mission & Values** (as stated currently on website/public materials):
+   - Current mission statement
+   - Core values they emphasize TODAY
+   - Cultural priorities
 
-Be factual, current, and actionable for a job applicant researching before an interview.`;
+3. **Recent Developments** (last 3-6 months ONLY):
+   - New products/services launched
+   - Recent funding, acquisitions, or partnerships
+   - Expansion into new markets
+   - Recent awards or recognition
+   - Current strategic initiatives
+
+CRITICAL EXCLUSIONS - DO NOT include:
+- Founding stories or company history
+- Executive biographies or personal backgrounds
+- Outdated news (older than 6 months)
+- Generic information available on Wikipedia
+- Layoffs or negative press unless absolutely recent and relevant
+
+Format: Provide concise, factual, actionable information that helps a job applicant understand the company's CURRENT state and direction.`;
 
     // Call Lovable AI
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -71,7 +80,10 @@ Be factual, current, and actionable for a job applicant researching before an in
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: 'You are a company research analyst focused on current, relevant information for job seekers. Prioritize recent developments over historical data.' },
+          { 
+            role: 'system', 
+            content: 'You are a company research analyst. Provide ONLY current (2024-2025), relevant information for job seekers. Exclude company history, founder bios, and outdated news. Focus on what matters for someone applying NOW: current mission, recent (3-6 months) developments, and current strategic direction. Be concise and factual.'
+          },
           { role: 'user', content: prompt }
         ],
       }),

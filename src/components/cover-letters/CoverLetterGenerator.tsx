@@ -92,41 +92,35 @@ export function CoverLetterGenerator() {
 
     setIsGenerating(true);
     try {
-      const result = await api.coverLetters.generate(selectedJob, tone, template);
+      // Build enhanced prompt with company research
+      const selectedJobData = jobs.find(j => j.id === selectedJob);
+      let enhancedPrompt = '';
+      
+      if (companyResearch) {
+        const companyName = companyResearch.companyInfo?.name || selectedJobData?.company_name;
+        const industry = companyResearch.companyInfo?.industry;
+        const mission = companyResearch.mission || '';
+        const recentNews = companyResearch.recentNews?.[0];
+        
+        enhancedPrompt = `COMPANY RESEARCH CONTEXT:\n`;
+        enhancedPrompt += `Company: ${companyName}\n`;
+        if (industry) enhancedPrompt += `Industry: ${industry}\n`;
+        if (mission) enhancedPrompt += `Mission: ${mission}\n`;
+        if (recentNews?.title) {
+          enhancedPrompt += `Recent Development: ${recentNews.title}`;
+          if (recentNews.summary) enhancedPrompt += ` - ${recentNews.summary}`;
+          enhancedPrompt += `\n`;
+        }
+        enhancedPrompt += `\nUSE THIS RESEARCH to write a personalized opening paragraph that demonstrates genuine interest in the company's current work and mission. Reference specific recent developments naturally.\n\n`;
+      }
+
+      const result = await api.coverLetters.generate(selectedJob, tone, template, enhancedPrompt);
       
       if (!result || !result.content) {
         throw new Error('No content generated');
       }
-      
-      let generatedContent = result.content;
 
-      // Integrate company research at the beginning with real mission text
-      if (companyResearch) {
-        const companyName = companyResearch.companyInfo?.name || selectedJobData?.company_name || 'the company';
-        const industry = companyResearch.companyInfo?.industry || 'technology';
-        const mission = companyResearch.mission || companyResearch.companyInfo?.mission || '';
-        
-        let researchSection = `\n\nI am particularly drawn to ${companyName}'s position in the ${industry} sector`;
-        
-        if (mission) {
-          researchSection += `. Your mission — ${mission} — resonates deeply with my professional values and career goals`;
-        }
-        
-        if (companyResearch.recentNews && companyResearch.recentNews.length > 0) {
-          const news = companyResearch.recentNews[0];
-          researchSection += `. I was especially impressed to learn about ${news.title}`;
-          if (news.summary) {
-            researchSection += ` — ${news.summary}`;
-          }
-        }
-        
-        researchSection += '.\n\n';
-        
-        // Insert after the opening paragraph
-        generatedContent = generatedContent.replace(/^([^\n]+\n\n)/, `$1${researchSection}`);
-      }
-
-      setContent(generatedContent);
+      setContent(result.content);
       toast.success('Cover letter generated successfully!');
     } catch (error: any) {
       const errorMsg = error.message || 'Unknown error';
@@ -134,6 +128,8 @@ export function CoverLetterGenerator() {
         toast.error("Rate limit exceeded. Please try again later.");
       } else if (errorMsg.includes('credits') || errorMsg.includes('402')) {
         toast.error("AI credits exhausted. Please add credits to continue.");
+      } else if (errorMsg.includes('non-2xx')) {
+        toast.error("Failed to generate cover letter. Please try again.");
       } else if (errorMsg.includes('PROFILE_REQUIRED')) {
         toast.error('Please complete your profile first');
       } else {
@@ -159,14 +155,22 @@ export function CoverLetterGenerator() {
     }
 
     try {
-      await api.coverLetters.create({
+      const savedLetter = await api.coverLetters.create({
         title,
         template,
         tone,
         content,
         job_id: selectedJob || null,
       });
-      toast.success('Cover letter saved successfully!');
+      
+      // Update job with cover letter link
+      if (selectedJob && savedLetter?.id) {
+        await api.jobs.update(selectedJob, {
+          cover_letter_id: savedLetter.id,
+        });
+      }
+      
+      toast.success('Cover letter saved and linked to job!');
     } catch (error) {
       toast.error('Failed to save cover letter');
       console.error('Error:', error);

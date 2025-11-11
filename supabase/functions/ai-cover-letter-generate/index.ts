@@ -16,7 +16,7 @@ serve(async (req) => {
     const authHeader = req.headers.get('Authorization')!;
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_PUBLISHABLE_KEY') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: authHeader } } }
     );
 
@@ -28,7 +28,7 @@ serve(async (req) => {
       });
     }
 
-    const { jobId, tone = 'professional', template = 'formal' } = await req.json();
+    const { jobId, tone = 'professional', template = 'formal', researchContext = '' } = await req.json();
 
     // Get user profile
     const { data: profile } = await supabaseClient
@@ -52,8 +52,8 @@ serve(async (req) => {
       });
     }
 
-    // Build prompt based on tone and template
-    const prompt = buildCoverLetterPrompt(profile, job, tone, template);
+    // Build prompt based on tone and template with optional research context
+    const prompt = buildCoverLetterPrompt(profile, job, tone, template, researchContext);
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -121,8 +121,15 @@ serve(async (req) => {
   }
 });
 
-function buildCoverLetterPrompt(profile: any, job: any, tone: string, template: string) {
-  let prompt = `Generate a ${tone} cover letter for the following job application:\n\n`;
+function buildCoverLetterPrompt(profile: any, job: any, tone: string, template: string, researchContext: string) {
+  let prompt = '';
+  
+  // Add research context first if available
+  if (researchContext) {
+    prompt += researchContext;
+  }
+  
+  prompt += `Generate a ${tone} cover letter for the following job application:\n\n`;
   
   prompt += `Candidate Information:\n`;
   prompt += `Name: ${profile.name}\n`;
@@ -150,7 +157,7 @@ function buildCoverLetterPrompt(profile: any, job: any, tone: string, template: 
   }
   
   prompt += `\nRequirements:\n`;
-  prompt += `1. Opening paragraph: Express enthusiasm and explain why you're interested\n`;
+  prompt += `1. Opening paragraph: ${researchContext ? 'Use the company research to show genuine interest and understanding of their current work' : 'Express enthusiasm and explain why you\'re interested'}\n`;
   prompt += `2. Body paragraphs: Highlight 2-3 relevant achievements that match job requirements\n`;
   prompt += `3. Closing paragraph: Thank them and express eagerness to discuss further\n`;
   prompt += `4. Use specific examples and quantify achievements where possible\n`;
