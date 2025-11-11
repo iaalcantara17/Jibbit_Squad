@@ -12,6 +12,7 @@ import { Job, JobFilters as JobFiltersType } from '@/types/jobs';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { mapDBStatusToUI } from '@/lib/jobStatusMapping';
 
 const Jobs = () => {
   const { user } = useAuth();
@@ -29,12 +30,12 @@ const Jobs = () => {
 
   const statuses: Array<{ value: string; label: string; count: number }> = [
     { value: 'all', label: 'All Jobs', count: jobs.length },
-    { value: 'Interested', label: 'Interested', count: jobs.filter(j => j.status === 'Interested').length },
-    { value: 'Applied', label: 'Applied', count: jobs.filter(j => j.status === 'Applied').length },
-    { value: 'Phone Screen', label: 'Phone Screen', count: jobs.filter(j => j.status === 'Phone Screen').length },
-    { value: 'Interview', label: 'Interview', count: jobs.filter(j => j.status === 'Interview').length },
-    { value: 'Offer', label: 'Offer', count: jobs.filter(j => j.status === 'Offer').length },
-    { value: 'Rejected', label: 'Rejected', count: jobs.filter(j => j.status === 'Rejected').length },
+    { value: 'Interested', label: 'Interested', count: jobs.filter(j => mapDBStatusToUI(j.status) === 'Interested').length },
+    { value: 'Applied', label: 'Applied', count: jobs.filter(j => mapDBStatusToUI(j.status) === 'Applied').length },
+    { value: 'Phone Screen', label: 'Phone Screen', count: jobs.filter(j => mapDBStatusToUI(j.status) === 'Phone Screen').length },
+    { value: 'Interview', label: 'Interview', count: jobs.filter(j => mapDBStatusToUI(j.status) === 'Interview').length },
+    { value: 'Offer', label: 'Offer', count: jobs.filter(j => mapDBStatusToUI(j.status) === 'Offer').length },
+    { value: 'Rejected', label: 'Rejected', count: jobs.filter(j => mapDBStatusToUI(j.status) === 'Rejected').length },
   ];
 
   const fetchJobs = async () => {
@@ -85,7 +86,7 @@ const Jobs = () => {
 
   const filteredJobs = selectedStatus === 'all'
     ? jobs.filter(j => !j.is_archived)
-    : jobs.filter(j => j.status === selectedStatus && !j.is_archived);
+    : jobs.filter(j => mapDBStatusToUI(j.status) === selectedStatus && !j.is_archived);
 
   return (
     <div className="min-h-screen flex flex-col">
