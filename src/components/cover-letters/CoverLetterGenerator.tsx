@@ -69,7 +69,12 @@ export function CoverLetterGenerator() {
         selectedJobData.company_info?.website
       );
       setCompanyResearch(research);
-      toast.success('Company research completed');
+      
+      // Add research summary to content
+      const researchSummary = `\n\n--- COMPANY RESEARCH ---\n\nCompany: ${research.companyInfo?.name || selectedJobData.company_name}\nIndustry: ${research.companyInfo?.industry || 'N/A'}\nMission: ${research.mission || 'N/A'}\n\nRecent News:\n${research.recentNews?.slice(0, 3).map((news: any, idx: number) => `${idx + 1}. ${news.title} (${news.date}): ${news.summary}`).join('\n') || 'No recent news found'}\n\n--- END RESEARCH ---\n`;
+      setContent(prev => prev + researchSummary);
+      
+      toast.success('Company research completed and added to content');
     } catch (error: any) {
       if (error.message?.includes('Rate limit')) {
         toast.error("Rate limit exceeded. Please try again later.");

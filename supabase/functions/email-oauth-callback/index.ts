@@ -35,9 +35,10 @@ serve(async (req) => {
 
     const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
     const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET');
-    const redirectUri = Deno.env.get('GMAIL_REDIRECT_URI');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const redirectUri = `${supabaseUrl}/functions/v1/email-oauth-callback`;
 
-    if (!clientId || !clientSecret || !redirectUri) {
+    if (!clientId || !clientSecret) {
       throw new Error('Missing OAuth configuration');
     }
 
@@ -70,7 +71,7 @@ serve(async (req) => {
         provider: 'google',
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
-        expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
+        token_expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
       }, {
         onConflict: 'user_id,provider',
       });

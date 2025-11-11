@@ -170,32 +170,95 @@ export function ResumeBuilder({ resumeId, onSave }: ResumeBuilderProps) {
   };
 
   const handleApplyAIResult = (data: any) => {
-    // Apply the AI suggestions to the resume sections
+    // Apply ALL AI suggestions to the resume sections
     if (aiResult?.type === 'content') {
-      // Merge AI content into existing sections
       const updatedSections = [...sections];
-      if (data.summary) {
+      
+      // Apply ALL summary suggestions
+      if (data.summary?.suggestions && data.summary.suggestions.length > 0) {
         const summaryIdx = updatedSections.findIndex(s => s.type === 'summary');
+        const allSummaries = data.summary.suggestions.join('\n\n');
         if (summaryIdx >= 0) {
-          updatedSections[summaryIdx].content = data.summary.suggestions?.[0] || updatedSections[summaryIdx].content;
+          updatedSections[summaryIdx].content = allSummaries;
         } else {
-          updatedSections.unshift({ type: 'summary', title: 'Summary', content: data.summary.suggestions?.[0] || '', isVisible: true });
+          updatedSections.unshift({ 
+            id: `summary_${Date.now()}`,
+            type: 'summary', 
+            title: 'Summary', 
+            content: allSummaries, 
+            order: 0,
+            isVisible: true 
+          });
         }
       }
+      
+      // Apply ALL experience bullet points
+      if (data.experience?.bulletPoints && data.experience.bulletPoints.length > 0) {
+        const expIdx = updatedSections.findIndex(s => s.type === 'experience');
+        const allExperience = data.experience.bulletPoints.map((exp: any) => 
+          `### ${exp.role}\n${exp.points.map((p: string) => `• ${p}`).join('\n')}`
+        ).join('\n\n');
+        
+        if (expIdx >= 0) {
+          updatedSections[expIdx].content = allExperience;
+        } else {
+          updatedSections.push({ 
+            id: `experience_${Date.now()}`,
+            type: 'experience', 
+            title: 'Experience', 
+            content: allExperience, 
+            order: updatedSections.length,
+            isVisible: true 
+          });
+        }
+      }
+      
+      // Apply ALL skills (highlighted + suggested)
+      if (data.skills?.highlighted || data.skills?.suggested) {
+        const allSkills = [
+          ...(data.skills.highlighted || []),
+          ...(data.skills.suggested || [])
+        ];
+        const skillsIdx = updatedSections.findIndex(s => s.type === 'skills');
+        const skillsContent = allSkills.join(', ');
+        
+        if (skillsIdx >= 0) {
+          updatedSections[skillsIdx].content = skillsContent;
+        } else {
+          updatedSections.push({ 
+            id: `skills_${Date.now()}`,
+            type: 'skills', 
+            title: 'Skills', 
+            content: skillsContent, 
+            order: updatedSections.length,
+            isVisible: true 
+          });
+        }
+      }
+      
       setSections(updatedSections);
+      toast.success('All AI-generated content applied successfully!');
     } else if (aiResult?.type === 'skills') {
-      // Update skills section
+      // Update skills section with optimized skills
       const updatedSections = [...sections];
       const skillsIdx = updatedSections.findIndex(s => s.type === 'skills');
       const skillsContent = data.optimized?.map((s: any) => s.name).join(', ') || '';
       if (skillsIdx >= 0) {
         updatedSections[skillsIdx].content = skillsContent;
       } else {
-        updatedSections.push({ type: 'skills', title: 'Skills', content: skillsContent, isVisible: true });
+        updatedSections.push({ 
+          id: `skills_${Date.now()}`,
+          type: 'skills', 
+          title: 'Skills', 
+          content: skillsContent, 
+          order: updatedSections.length,
+          isVisible: true 
+        });
       }
       setSections(updatedSections);
+      toast.success('Optimized skills applied!');
     } else if (aiResult?.type === 'experience') {
-      // Update experience section
+      // Update experience section with tailored content
       const updatedSections = [...sections];
       const expIdx = updatedSections.findIndex(s => s.type === 'experience');
       const expContent = data.tailored?.map((e: any) => 
@@ -204,9 +267,17 @@ export function ResumeBuilder({ resumeId, onSave }: ResumeBuilderProps) {
       if (expIdx >= 0) {
         updatedSections[expIdx].content = expContent;
       } else {
-        updatedSections.push({ type: 'experience', title: 'Experience', content: expContent, isVisible: true });
+        updatedSections.push({ 
+          id: `experience_${Date.now()}`,
+          type: 'experience', 
+          title: 'Experience', 
+          content: expContent, 
+          order: updatedSections.length,
+          isVisible: true 
+        });
       }
       setSections(updatedSections);
+      toast.success('Tailored experience applied!');
     }
     setAiResult(null);
   };
@@ -408,7 +479,8 @@ export function ResumeBuilder({ resumeId, onSave }: ResumeBuilderProps) {
                           setSections(updated);
                         }}
                         placeholder="Enter section content..."
-                        rows={4}
+                        rows={8}
+                        className="min-h-[200px]"
                       />
                     </CardContent>
                   </Card>

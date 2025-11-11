@@ -84,6 +84,44 @@ export const AutomationRuleBuilder = () => {
       return;
     }
 
+    // Validate trigger-specific fields
+    if (editingRule.trigger.type === 'status_change' && !editingRule.trigger.to) {
+      toast({
+        title: "Validation Error",
+        description: "Please select a status for the trigger",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (editingRule.trigger.type === 'deadline' && !editingRule.trigger.days_before) {
+      toast({
+        title: "Validation Error",
+        description: "Please specify days before deadline",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate action-specific fields
+    if (editingRule.action.type === 'send_email' && (!editingRule.action.subject || !editingRule.action.body)) {
+      toast({
+        title: "Validation Error",
+        description: "Please provide email subject and body",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (editingRule.action.type === 'change_status' && !editingRule.action.to) {
+      toast({
+        title: "Validation Error",
+        description: "Please select a status for the action",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
@@ -93,21 +131,33 @@ export const AutomationRuleBuilder = () => {
           .from('automation_rules')
           .insert({
             name: editingRule.name,
-            is_enabled: editingRule.is_enabled,
-            trigger: editingRule.trigger as unknown as any,
-            action: editingRule.action as unknown as any,
+            is_enabled: editingRule.is_enabled ?? true,
+            trigger: editingRule.trigger,
+            action: editingRule.action,
             user_id: user.id,
             rule_type: editingRule.trigger.type,
           });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Insert error:', error);
+          throw error;
+        }
       } else {
         const { error } = await supabase
           .from('automation_rules')
-          .update(editingRule)
+          .update({
+            name: editingRule.name,
+            is_enabled: editingRule.is_enabled,
+            trigger: editingRule.trigger,
+            action: editingRule.action,
+            rule_type: editingRule.trigger.type,
+          })
           .eq('id', editingRule.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Update error:', error);
+          throw error;
+        }
       }
 
       toast({
@@ -122,7 +172,7 @@ export const AutomationRuleBuilder = () => {
       console.error('Failed to save rule:', error);
       toast({
         title: "Error",
-        description: "Failed to save rule",
+        description: error instanceof Error ? error.message : "Failed to save rule",
         variant: "destructive",
       });
     }

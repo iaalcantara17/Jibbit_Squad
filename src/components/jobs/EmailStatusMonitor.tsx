@@ -44,17 +44,43 @@ export function EmailStatusMonitor() {
   };
 
   const checkEmails = async () => {
+    // Check if email is connected first
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("Please log in first");
+      return;
+    }
+
+    const { data: integration } = await supabase
+      .from('email_integrations')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('provider', 'google')
+      .single();
+
+    if (!integration) {
+      toast.error("Please connect your email in Settings first", {
+        action: {
+          label: "Go to Settings",
+          onClick: () => window.location.href = "/email-integration"
+        }
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      toast.info("Email monitoring feature requires email integration setup");
-      // In a real implementation, this would:
-      // 1. Connect to user's email via OAuth (Gmail, Outlook, etc.)
-      // 2. Scan for job-related emails
-      // 3. Use AI to detect status updates
-      // 4. Update job statuses automatically
-    } catch (error) {
+      const { data, error } = await supabase.functions.invoke('email-poller', {
+        body: {}
+      });
+
+      if (error) throw error;
+
+      toast.success("Email check complete! Found " + (data?.emailsProcessed || 0) + " job-related emails");
+      fetchEmailTracking();
+    } catch (error: any) {
       console.error('Error checking emails:', error);
-      toast.error("Failed to check emails");
+      toast.error(error.message || "Failed to check emails");
     } finally {
       setLoading(false);
     }

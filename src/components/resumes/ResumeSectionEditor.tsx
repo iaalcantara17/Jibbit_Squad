@@ -151,7 +151,8 @@ export const ResumeSectionEditor = ({ sections, onUpdate }: ResumeSectionEditorP
                           onChange={(e) => updateSection(section.id, "content", e.target.value)}
                           onBlur={() => saveSection(section.id)}
                           placeholder="Section content..."
-                          className="min-h-32"
+                          className="min-h-[200px]"
+                          rows={10}
                         />
                       </CardContent>
                     </Card>

@@ -23,6 +23,8 @@ import CalendarConnect from "./pages/CalendarConnect";
 import CalendarCallback from "./pages/CalendarCallback";
 import IntegrationsSettings from "./pages/IntegrationsSettings";
 import EmailMonitor from "./pages/EmailMonitor";
+import EmailIntegration from "./pages/EmailIntegration";
+import EmailCallback from "./pages/EmailCallback";
 import PublicReviewerView from "./pages/PublicReviewerView";
 import NotFound from "./pages/NotFound";
 
@@ -118,6 +120,22 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <EmailMonitor />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/email-integration"
+                element={
+                  <ProtectedRoute>
+                    <EmailIntegration />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/email/callback" 
+                element={
+                  <ProtectedRoute>
+                    <EmailCallback />
                   </ProtectedRoute>
                 } 
               />

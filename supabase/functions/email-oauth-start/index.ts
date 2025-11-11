@@ -12,9 +12,10 @@ serve(async (req) => {
 
   try {
     const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
-    const redirectUri = Deno.env.get('GMAIL_REDIRECT_URI');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const redirectUri = `${supabaseUrl}/functions/v1/email-oauth-callback`;
 
-    if (!clientId || !redirectUri) {
+    if (!clientId) {
       throw new Error('Missing OAuth configuration');
     }
 
