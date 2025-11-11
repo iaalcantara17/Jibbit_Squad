@@ -136,6 +136,10 @@ export interface JobFilters {
   status?: JobStatus;
   isArchived?: boolean;
   search?: string;
+  salaryMin?: number;
+  salaryMax?: number;
+  deadlineFrom?: string;
+  deadlineTo?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }

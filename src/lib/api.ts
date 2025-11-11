@@ -20,15 +20,42 @@ export const api = {
         .select('*')
         .eq('user_id', user.id);
 
+      // Text search on job_title OR company_name (case-insensitive, partial match)
+      if (filters?.search) {
+        const searchTerm = `%${filters.search}%`;
+        query = query.or(`job_title.ilike.${searchTerm},company_name.ilike.${searchTerm}`);
+      }
+
+      // Status filter (single value)
       if (filters?.status) {
         query = query.eq('status', filters.status);
       }
 
+      // Salary range filters
+      if (filters?.salaryMin !== undefined) {
+        query = query.gte('salary_max', filters.salaryMin);
+      }
+      if (filters?.salaryMax !== undefined) {
+        query = query.lte('salary_min', filters.salaryMax);
+      }
+
+      // Deadline range filters
+      if (filters?.deadlineFrom) {
+        query = query.gte('application_deadline', filters.deadlineFrom);
+      }
+      if (filters?.deadlineTo) {
+        query = query.lte('application_deadline', filters.deadlineTo);
+      }
+
+      // Archive filter
       if (filters?.isArchived !== undefined) {
         query = query.eq('is_archived', filters.isArchived);
       }
 
-      query = query.order('created_at', { ascending: false });
+      // Sorting
+      const sortBy = filters?.sortBy || 'created_at';
+      const sortOrder = filters?.sortOrder === 'asc' ? { ascending: true } : { ascending: false };
+      query = query.order(sortBy, sortOrder);
 
       const { data, error } = await query;
       if (error) throw error;

@@ -44,7 +44,22 @@ export const ExperienceTailoringPanel = ({
         body: { jobId },
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes('429') || error.message?.includes('Rate limit')) {
+          throw new Error('Rate limit exceeded. Please try again later.');
+        }
+        if (error.message?.includes('402') || error.message?.includes('credits')) {
+          throw new Error('AI credits exhausted. Please add credits to continue.');
+        }
+        if (error.message?.includes('PROFILE_REQUIRED')) {
+          throw new Error('Please complete your profile first');
+        }
+        throw error;
+      }
+
+      if (!data || !data.entries) {
+        throw new Error('Invalid response from AI service');
+      }
 
       setSuggestions(data.entries || []);
       toast({

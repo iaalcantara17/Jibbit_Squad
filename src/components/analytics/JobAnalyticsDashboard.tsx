@@ -58,13 +58,13 @@ export function JobAnalyticsDashboard() {
   };
 
   const statusDistribution = stats ? [
-    { name: 'Interested', value: stats.statusCounts['interested'] || 0 },
-    { name: 'Applied', value: stats.statusCounts['applied'] || 0 },
-    { name: 'Phone Screen', value: stats.statusCounts['phone_screen'] || 0 },
-    { name: 'Interview', value: stats.statusCounts['interview'] || 0 },
-    { name: 'Offer', value: stats.statusCounts['offer'] || 0 },
-    { name: 'Rejected', value: stats.statusCounts['rejected'] || 0 },
-  ] : [];
+    { name: 'Interested', value: stats.statusCounts['interested'] || 0, color: COLORS[0] },
+    { name: 'Applied', value: stats.statusCounts['applied'] || 0, color: COLORS[1] },
+    { name: 'Phone Screen', value: stats.statusCounts['phone_screen'] || 0, color: COLORS[2] },
+    { name: 'Interview', value: stats.statusCounts['interview'] || 0, color: COLORS[3] },
+    { name: 'Offer', value: stats.statusCounts['offer'] || 0, color: COLORS[4] },
+    { name: 'Rejected', value: stats.statusCounts['rejected'] || 0, color: COLORS[5] },
+  ].filter(item => item.value > 0) : [];
 
   const funnelData = stats ? [
     { stage: 'Applied', count: stats.appliedJobs },
@@ -137,26 +137,32 @@ export function JobAnalyticsDashboard() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={statusDistribution}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => {
-                    const percentValue = typeof percent === 'number' ? percent : 0;
-                    return `${name}: ${(percentValue * 100).toFixed(0)}%`;
-                  }}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {statusDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
+              {statusDistribution.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  No data to display. Add jobs to see the distribution.
+                </div>
+              ) : (
+                <PieChart>
+                  <Pie
+                    data={statusDistribution}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => {
+                      const percentValue = typeof percent === 'number' ? percent : 0;
+                      return `${name}: ${(percentValue * 100).toFixed(0)}%`;
+                    }}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {statusDistribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              )}
             </ResponsiveContainer>
           </CardContent>
         </Card>

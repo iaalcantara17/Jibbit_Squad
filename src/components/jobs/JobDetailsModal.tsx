@@ -63,11 +63,24 @@ export const JobDetailsModal = ({ job, isOpen, onClose, onUpdate }: JobDetailsMo
     
     setIsSaving(true);
     try {
-      // Ensure we're using the correct field names for the database
-      const updateData = {
-        ...editedJob,
-        updated_at: new Date().toISOString(),
-      };
+      // Map UI field names to DB field names
+      const updateData: any = {};
+      
+      if (editedJob.jobTitle !== undefined) updateData.job_title = editedJob.jobTitle;
+      if (editedJob.job_title !== undefined) updateData.job_title = editedJob.job_title;
+      if (editedJob.status !== undefined) updateData.status = editedJob.status;
+      if (editedJob.notes !== undefined) updateData.notes = editedJob.notes;
+      if (editedJob.jobDescription !== undefined) updateData.job_description = editedJob.jobDescription;
+      if (editedJob.location !== undefined) updateData.location = editedJob.location;
+      if (editedJob.jobType !== undefined) updateData.job_type = editedJob.jobType;
+      if (editedJob.salaryMin !== undefined) updateData.salary_min = editedJob.salaryMin;
+      if (editedJob.salaryMax !== undefined) updateData.salary_max = editedJob.salaryMax;
+      if (editedJob.applicationDeadline !== undefined) updateData.application_deadline = editedJob.applicationDeadline;
+      if (editedJob.contacts !== undefined) updateData.contacts = editedJob.contacts;
+      if (editedJob.salaryNegotiationNotes !== undefined) updateData.salary_notes = editedJob.salaryNegotiationNotes;
+      if (editedJob.interviewNotes !== undefined) updateData.interview_notes = editedJob.interviewNotes;
+      
+      updateData.updated_at = new Date().toISOString();
       
       await api.jobs.update(job.id, updateData);
       toast.success("Job updated successfully");

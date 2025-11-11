@@ -13,6 +13,7 @@ import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { getStatusLabel, JOB_STATUS, PIPELINE_STAGES } from '@/lib/constants/jobStatus';
+import { JobPipeline } from '@/components/jobs/JobPipeline';
 
 const Jobs = () => {
   const { user } = useAuth();
@@ -24,9 +25,10 @@ const Jobs = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'pipeline'>('grid');
   const [filters, setFilters] = useState<JobFiltersType>({
     isArchived: false,
-    sortBy: 'createdAt',
+    sortBy: 'created_at',
     sortOrder: 'desc',
   });
+  const [debouncedFilters, setDebouncedFilters] = useState<JobFiltersType>(filters);
 
   const statuses: Array<{ value: string; label: string; count: number }> = [
     { value: 'all', label: 'All Jobs', count: jobs.length },
@@ -37,12 +39,21 @@ const Jobs = () => {
     })),
   ];
 
+  // Debounce search filter with 300ms delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedFilters(filters);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [filters]);
+
   const fetchJobs = async () => {
     if (!user) return;
     
     setIsLoading(true);
     try {
-      const jobsData = await api.jobs.getAll(filters);
+      const jobsData = await api.jobs.getAll(debouncedFilters);
       setJobs(jobsData as any);
     } catch (error: any) {
       console.error('Error loading jobs:', error);
@@ -54,7 +65,7 @@ const Jobs = () => {
 
   useEffect(() => {
     fetchJobs();
-  }, [user, filters]);
+  }, [user, debouncedFilters]);
 
   const handleAddSuccess = () => {
     setIsAddDialogOpen(false);
@@ -120,7 +131,7 @@ const Jobs = () => {
             filters={filters}
             onFiltersChange={setFilters}
             onClearFilters={() =>
-              setFilters({ isArchived: false, sortBy: 'createdAt', sortOrder: 'desc' })
+              setFilters({ isArchived: false, sortBy: 'created_at', sortOrder: 'desc' })
             }
           />
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
@@ -140,7 +151,7 @@ const Jobs = () => {
             ))}
           </div>
 
-          {/* Jobs Grid */}
+          {/* Jobs Grid/Pipeline */}
           {isLoading ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground">Loading jobs...</p>
@@ -155,6 +166,8 @@ const Jobs = () => {
                 Add Your First Job
               </Button>
             </div>
+          ) : viewMode === 'pipeline' ? (
+            <JobPipeline jobs={jobs} onJobUpdate={fetchJobs} />
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredJobs.map((job) => (

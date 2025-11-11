@@ -33,13 +33,13 @@ export function JobPipeline({ jobs, onJobUpdate }: JobPipelineProps) {
     if (!destination) return;
     if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
-    const newStatus = destination.droppableId;
+    const newStatus = toDbStatus(destination.droppableId);
     const jobId = draggableId;
 
     try {
       // Update job status AND timestamp
       await api.jobs.update(jobId, {
-        status: toDbStatus(newStatus),
+        status: newStatus,
         status_updated_at: new Date().toISOString(),
       });
       toast.success('Job status updated');

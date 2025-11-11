@@ -83,20 +83,48 @@ Be factual and current. If information is not available, indicate that clearly.`
     const aiData = await aiResponse.json();
     const researchContent = aiData.choices[0].message.content;
 
-    // Try to parse as JSON, fallback to structured text
-    let structuredResearch;
-    try {
-      const jsonMatch = researchContent.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        structuredResearch = JSON.parse(jsonMatch[0]);
-      } else {
-        structuredResearch = { fullText: researchContent };
+    // Parse research into structured format with helper functions
+    const extractSection = (text: string, keyword: string): string => {
+      const lines = text.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].toLowerCase().includes(keyword.toLowerCase())) {
+          return lines[i].split(':')[1]?.trim() || lines[i + 1]?.trim() || '';
+        }
       }
-    } catch (e) {
-      structuredResearch = { fullText: researchContent };
-    }
+      return '';
+    };
 
-    return new Response(JSON.stringify({ research: structuredResearch }), {
+    const parseRecentNews = (text: string): Array<{title: string; date: string; summary: string}> => {
+      const newsItems: Array<{title: string; date: string; summary: string}> = [];
+      const lines = text.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].includes('News') || lines[i].match(/\d+\./)) {
+          const title = lines[i].replace(/^\d+\./, '').trim();
+          if (title.length > 10) {
+            newsItems.push({
+              title,
+              date: 'Recent',
+              summary: lines[i + 1]?.trim() || title,
+            });
+          }
+        }
+      }
+      return newsItems.slice(0, 5);
+    };
+
+    const structuredResearch = {
+      companyInfo: {
+        name: companyName,
+        industry: extractSection(researchContent, 'industry') || 'Technology',
+        size: extractSection(researchContent, 'size') || 'Not available',
+      },
+      mission: extractSection(researchContent, 'mission') || extractSection(researchContent, 'values') || 'Information not available',
+      recentNews: parseRecentNews(researchContent),
+      fullText: researchContent,
+    };
+
+    return new Response(JSON.stringify(structuredResearch), {
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {

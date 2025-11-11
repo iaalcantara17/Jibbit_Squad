@@ -69,16 +69,11 @@ export function CoverLetterGenerator() {
         selectedJobData.company_info?.website
       );
       setCompanyResearch(research);
-      
-      // Add research summary to content
-      const researchSummary = `\n\n--- COMPANY RESEARCH ---\n\nCompany: ${research.companyInfo?.name || selectedJobData.company_name}\nIndustry: ${research.companyInfo?.industry || 'N/A'}\nMission: ${research.mission || 'N/A'}\n\nRecent News:\n${research.recentNews?.slice(0, 3).map((news: any, idx: number) => `${idx + 1}. ${news.title} (${news.date}): ${news.summary}`).join('\n') || 'No recent news found'}\n\n--- END RESEARCH ---\n`;
-      setContent(prev => prev + researchSummary);
-      
-      toast.success('Company research completed and added to content');
+      toast.success('Company research completed');
     } catch (error: any) {
-      if (error.message?.includes('Rate limit')) {
+      if (error.message?.includes('Rate limit') || error.message?.includes('429')) {
         toast.error("Rate limit exceeded. Please try again later.");
-      } else if (error.message?.includes('credits')) {
+      } else if (error.message?.includes('credits') || error.message?.includes('402')) {
         toast.error("AI credits exhausted. Please add credits to continue.");
       } else {
         toast.error('Failed to research company');
@@ -99,42 +94,31 @@ export function CoverLetterGenerator() {
     try {
       const result = await api.coverLetters.generate(selectedJob, tone, template);
       
-      // Handle different response formats and error cases
-      if (!result) {
-        throw new Error('No response from AI service');
-      }
-      
-      // Check for error in response
-      if (result.error) {
-        const errorCode = result.error.code || result.error.message;
-        if (errorCode === 'RATE_LIMIT' || result.error.message?.includes('Rate limit')) {
-          throw new Error('Rate limit exceeded');
-        }
-        if (errorCode === 'PAYMENT_REQUIRED' || result.error.message?.includes('credits')) {
-          throw new Error('AI credits exhausted');
-        }
-        throw new Error(result.error.message || 'Failed to generate cover letter');
+      if (!result || !result.content) {
+        throw new Error('No content generated');
       }
       
       let generatedContent = result.content;
-      
-      if (!generatedContent) {
-        throw new Error('Generated content is empty');
-      }
 
-      // Integrate company research if available
+      // Integrate company research at the beginning
       if (companyResearch) {
-        const researchInsert = `\n\nI am particularly excited about ${companyResearch.companyInfo?.name || 'your company'}'s work in ${companyResearch.companyInfo?.industry || 'the industry'}. ${companyResearch.recentNews?.[0]?.summary ? `I was impressed to learn about ${companyResearch.recentNews[0].summary}` : ''}`;
-        generatedContent = generatedContent.replace(/\n\nSincerely,/, researchInsert + '\n\nSincerely,');
+        const companyContext = `\n\nREGARDING ${companyResearch.companyInfo?.name?.toUpperCase() || 'THE COMPANY'}:\n\nI am writing to express my strong interest in this position. ${companyResearch.companyInfo?.name || 'Your company'} operates in ${companyResearch.companyInfo?.industry || 'the industry'}, and I am particularly drawn to ${companyResearch.mission || 'your mission and values'}.\n\n`;
+        
+        if (companyResearch.recentNews && companyResearch.recentNews.length > 0) {
+          const newsInsert = `I was impressed to learn about ${companyResearch.recentNews[0].title}. ${companyResearch.recentNews[0].summary}\n\n`;
+          generatedContent = generatedContent.replace(/^([^\n]+\n\n)/, `$1${companyContext}${newsInsert}`);
+        } else {
+          generatedContent = generatedContent.replace(/^([^\n]+\n\n)/, `$1${companyContext}`);
+        }
       }
 
       setContent(generatedContent);
       toast.success('Cover letter generated successfully!');
     } catch (error: any) {
       const errorMsg = error.message || 'Unknown error';
-      if (errorMsg.includes('Rate limit')) {
+      if (errorMsg.includes('Rate limit') || errorMsg.includes('429')) {
         toast.error("Rate limit exceeded. Please try again later.");
-      } else if (errorMsg.includes('credits')) {
+      } else if (errorMsg.includes('credits') || errorMsg.includes('402')) {
         toast.error("AI credits exhausted. Please add credits to continue.");
       } else if (errorMsg.includes('PROFILE_REQUIRED')) {
         toast.error('Please complete your profile first');

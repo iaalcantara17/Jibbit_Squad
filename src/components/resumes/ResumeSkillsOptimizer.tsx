@@ -34,20 +34,32 @@ export const ResumeSkillsOptimizer = ({ jobId, currentSkills, onApplySkills }: R
         body: { jobId },
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes('429') || error.message?.includes('Rate limit')) {
+          throw new Error('Rate limit exceeded. Please try again later.');
+        }
+        if (error.message?.includes('402') || error.message?.includes('credits')) {
+          throw new Error('AI credits exhausted. Please add credits to continue.');
+        }
+        throw error;
+      }
+
+      if (!data || typeof data !== 'object') {
+        throw new Error('Invalid response from AI service');
+      }
 
       setResult(data);
       
       // Generate preview of optimized skills
       const optimized = [
-        ...currentSkills.filter(s => data.emphasize.includes(s)),
-        ...data.add,
+        ...currentSkills.filter(s => data.emphasize?.includes(s)),
+        ...(data.add || []),
       ];
       setPreviewSkills(optimized);
 
       toast({
         title: "Optimization Complete",
-        description: `Match score: ${data.score}%`,
+        description: `Match score: ${data.score || 0}%`,
       });
     } catch (error: any) {
       console.error('Optimization failed:', error);
