@@ -52,6 +52,36 @@ export type Database = {
           },
         ]
       }
+      automation_rules: {
+        Row: {
+          config: Json | null
+          created_at: string | null
+          enabled: boolean | null
+          id: string
+          rule_type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          rule_type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          rule_type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       calendar_integrations: {
         Row: {
           access_token: string | null

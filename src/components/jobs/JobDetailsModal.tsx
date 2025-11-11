@@ -27,6 +27,8 @@ import { SkillsGapAnalysis } from "./SkillsGapAnalysis";
 import { SalaryResearch } from "./SalaryResearch";
 import { InterviewInsights } from "./InterviewInsights";
 import { CompanyResearch } from "./CompanyResearch";
+import { CompanyInfoSection } from "./CompanyInfoSection";
+import { CompanyNewsSection } from "./CompanyNewsSection";
 import { InterviewScheduler, InterviewData } from "./InterviewScheduler";
 import { ApplicationMaterialsDialog } from "./ApplicationMaterialsDialog";
 import { format } from "date-fns";
@@ -493,8 +495,20 @@ export const JobDetailsModal = ({ job, isOpen, onClose, onUpdate }: JobDetailsMo
               <InterviewInsights jobId={job.id} />
             </TabsContent>
 
-            <TabsContent value="research">
+            <TabsContent value="research" className="space-y-4">
               <CompanyResearch jobId={job.id} />
+              
+              {typeof displayJob.company !== 'string' && displayJob.company && (
+                <>
+                  <CompanyInfoSection company={displayJob.company} />
+                  {displayJob.company.recentNews && displayJob.company.recentNews.length > 0 && (
+                    <CompanyNewsSection 
+                      companyName={displayJob.company.name} 
+                      news={displayJob.company.recentNews} 
+                    />
+                  )}
+                </>
+              )}
             </TabsContent>
 
             <TabsContent value="history" className="space-y-3">

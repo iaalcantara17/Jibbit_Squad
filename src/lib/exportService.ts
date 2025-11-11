@@ -198,8 +198,33 @@ export const exportCoverLetterToWord = async (coverLetter: any, filename?: strin
   saveAs(blob, filename || `cover-letter-${Date.now()}.docx`);
 };
 
-// Export resume to HTML
-export const exportResumeToHTML = (resume: any, filename?: string): void => {
+// Export resume to HTML with theme support
+export const exportResumeToHTML = (resume: any, filename?: string, theme: 'professional' | 'modern' | 'minimal' = 'professional'): void => {
+  const themes = {
+    professional: {
+      background: '#ffffff',
+      primary: '#2563eb',
+      text: '#1f2937',
+      secondary: '#6b7280',
+      accent: '#3b82f6'
+    },
+    modern: {
+      background: '#0f172a',
+      primary: '#8b5cf6',
+      text: '#f1f5f9',
+      secondary: '#94a3b8',
+      accent: '#a78bfa'
+    },
+    minimal: {
+      background: '#fafafa',
+      primary: '#000000',
+      text: '#404040',
+      secondary: '#737373',
+      accent: '#171717'
+    }
+  };
+  
+  const selectedTheme = themes[theme];
   const sections = resume.sections || [];
   let html = `<!DOCTYPE html>
 <html lang="en">

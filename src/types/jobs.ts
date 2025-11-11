@@ -24,6 +24,14 @@ export interface CompanyInfo {
   description?: string;
   logoUrl?: string;
   glassdoorRating?: number;
+  recentNews?: Array<{
+    title: string;
+    url: string;
+    date: string;
+    source: string;
+    category?: string;
+    summary?: string;
+  }>;
 }
 
 export interface JobContact {
