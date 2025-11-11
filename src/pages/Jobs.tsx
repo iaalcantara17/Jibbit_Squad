@@ -12,7 +12,7 @@ import { Job, JobFilters as JobFiltersType } from '@/types/jobs';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { mapDBStatusToUI } from '@/lib/jobStatusMapping';
+import { getStatusLabel, JOB_STATUS, PIPELINE_STAGES } from '@/lib/constants/jobStatus';
 
 const Jobs = () => {
   const { user } = useAuth();
@@ -30,12 +30,11 @@ const Jobs = () => {
 
   const statuses: Array<{ value: string; label: string; count: number }> = [
     { value: 'all', label: 'All Jobs', count: jobs.length },
-    { value: 'Interested', label: 'Interested', count: jobs.filter(j => mapDBStatusToUI(j.status) === 'Interested').length },
-    { value: 'Applied', label: 'Applied', count: jobs.filter(j => mapDBStatusToUI(j.status) === 'Applied').length },
-    { value: 'Phone Screen', label: 'Phone Screen', count: jobs.filter(j => mapDBStatusToUI(j.status) === 'Phone Screen').length },
-    { value: 'Interview', label: 'Interview', count: jobs.filter(j => mapDBStatusToUI(j.status) === 'Interview').length },
-    { value: 'Offer', label: 'Offer', count: jobs.filter(j => mapDBStatusToUI(j.status) === 'Offer').length },
-    { value: 'Rejected', label: 'Rejected', count: jobs.filter(j => mapDBStatusToUI(j.status) === 'Rejected').length },
+    ...PIPELINE_STAGES.map(stage => ({
+      value: stage.id,
+      label: stage.label,
+      count: jobs.filter(j => j.status === stage.id).length
+    })),
   ];
 
   const fetchJobs = async () => {
@@ -86,7 +85,7 @@ const Jobs = () => {
 
   const filteredJobs = selectedStatus === 'all'
     ? jobs.filter(j => !j.is_archived)
-    : jobs.filter(j => mapDBStatusToUI(j.status) === selectedStatus && !j.is_archived);
+    : jobs.filter(j => j.status === selectedStatus && !j.is_archived);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -160,7 +159,7 @@ const Jobs = () => {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredJobs.map((job) => (
                 <JobCard
-                  key={job.job_id || job._id}
+                  key={job.id}
                   job={job}
                   onView={setSelectedJob}
                   onDelete={handleDeleteJob}

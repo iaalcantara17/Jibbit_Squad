@@ -55,31 +55,38 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    const prompt = `You are a job posting parser. Extract structured information from HTML content.
+    // Extract domain for specialized parsing
+    const urlObj = new URL(url);
+    const domain = urlObj.hostname.toLowerCase();
+    
+    // Check for LinkedIn or Indeed specific optimizations
+    const isLinkedIn = domain.includes('linkedin.com');
+    const isIndeed = domain.includes('indeed.com');
+    
+    const prompt = `Parse job posting data from ${isLinkedIn ? 'LinkedIn' : isIndeed ? 'Indeed' : 'this'} HTML.
 
-CRITICAL: Return ONLY valid JSON with NO markdown, NO code blocks, NO explanations. Just the JSON object.
+CRITICAL: Return ONLY valid JSON - no markdown blocks, no explanations.
 
-Extract these fields:
+Required format:
 {
-  "job_title": "string",
-  "company_name": "string", 
-  "location": "string",
-  "job_description": "string (summarize responsibilities and requirements, max 2000 chars)",
-  "salary_min": number or null,
-  "salary_max": number or null,
-  "job_type": "Full-time" or "Part-time" or "Contract" or "Temporary" or "Internship" or null,
-  "industry": "string or null"
+  "job_title": "exact title from posting",
+  "company_name": "company name",
+  "location": "city, state or Remote",
+  "job_description": "full description with key responsibilities and requirements",
+  "salary_min": <number or null>,
+  "salary_max": <number or null>,
+  "job_type": "full-time|part-time|contract|internship|temporary" or null,
+  "industry": "industry name" or null,
+  "application_deadline": "YYYY-MM-DD" or null
 }
 
-Rules:
-- Extract actual data from the HTML
-- For salary, extract numeric values (convert $80K to 80000)
-- If information is not found, use null
-- Keep job_description concise
-- Return ONLY JSON, nothing else
+${isLinkedIn ? 'LinkedIn tips: Look for job-details, topcard, job-criteria' : ''}
+${isIndeed ? 'Indeed tips: Look for jobsearch-JobComponent, icl-u-xs-mb' : ''}
 
-HTML Content:
-${html.substring(0, 10000)}`;
+Extract numeric salary values (convert "$80K" to 80000). If range like "$80K-$120K", split to min/max.
+
+HTML (first 12KB):
+${html.substring(0, 12000)}`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -90,10 +97,13 @@ ${html.substring(0, 10000)}`;
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: 'You are a job posting parser. Extract structured data and return ONLY valid JSON with no markdown formatting.' },
+          { 
+            role: 'system', 
+            content: 'You are a precise job posting parser. Extract ALL available data. Return ONLY valid JSON with no formatting.' 
+          },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.1,
+        temperature: 0.2,
       }),
     });
 

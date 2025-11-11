@@ -61,39 +61,42 @@ export const JobForm = ({ initialData, onSuccess, onCancel }: JobFormProps) => {
     try {
       const result = await api.jobImport.fromUrl(importUrl);
       
-      if (result && result.content) {
-        // Handle the AI response format
-        const jobData = result.content;
-        setValue('title', jobData.job_title || '');
-        setValue('company', jobData.company_name || '');
-        setValue('location', jobData.location || '');
-        setValue('description', jobData.job_description || '');
-        setValue('industry', jobData.industry || '');
-        setValue('jobType', jobData.job_type?.toLowerCase() as any || undefined);
-        setValue('salaryMin', jobData.salary_min || undefined);
-        setValue('salaryMax', jobData.salary_max || undefined);
-        setValue('jobPostingUrl', importUrl);
-        
-        toast.success('Job details imported successfully!');
-        setImportUrl('');
-      } else if (result) {
-        // Direct data format
+      if (result && (result.job_title || result.company_name)) {
+        // Map the API response to form fields
         setValue('title', result.job_title || '');
         setValue('company', result.company_name || '');
         setValue('location', result.location || '');
         setValue('description', result.job_description || '');
         setValue('industry', result.industry || '');
-        setValue('jobType', result.job_type?.toLowerCase() as any || undefined);
+        setValue('jobType', result.job_type?.toLowerCase().replace(/-/g, '-') as any || undefined);
         setValue('salaryMin', result.salary_min || undefined);
         setValue('salaryMax', result.salary_max || undefined);
         setValue('jobPostingUrl', importUrl);
         
-        toast.success('Job details imported successfully!');
+        if (result.application_deadline) {
+          try {
+            setValue('applicationDeadline', new Date(result.application_deadline));
+          } catch (e) {
+            console.warn('Invalid deadline format:', result.application_deadline);
+          }
+        }
+        
+        const missingFields = [];
+        if (!result.job_title) missingFields.push('title');
+        if (!result.company_name) missingFields.push('company');
+        if (!result.location) missingFields.push('location');
+        
+        if (missingFields.length === 0) {
+          toast.success('Job details imported successfully!');
+        } else {
+          toast.warning(`Imported! Please fill in: ${missingFields.join(', ')}`);
+        }
         setImportUrl('');
       } else {
         toast.warning('Partial import - please review and fill in missing details');
       }
     } catch (error: any) {
+      console.error('Import error:', error);
       if (error.message?.includes('Rate limit')) {
         toast.error("Rate limit exceeded. Please try again later.");
       } else if (error.message?.includes('credits')) {
@@ -101,7 +104,6 @@ export const JobForm = ({ initialData, onSuccess, onCancel }: JobFormProps) => {
       } else {
         toast.error('Failed to import job details. Please enter manually.');
       }
-      console.error('Import error:', error);
     } finally {
       setIsImporting(false);
     }

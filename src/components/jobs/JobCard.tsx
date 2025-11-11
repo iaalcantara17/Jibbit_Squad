@@ -2,11 +2,12 @@ import { Job, JobStatus } from '@/types/jobs';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MapPin, DollarSign, Calendar, ExternalLink, MoreVertical } from 'lucide-react';
+import { MapPin, DollarSign, Calendar, ExternalLink, MoreVertical, AlertCircle } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { format, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { mapDBStatusToUI } from '@/lib/jobStatusMapping';
+import { getStatusLabel } from '@/lib/constants/jobStatus';
+import { getDeadlineInfo } from '@/lib/utils/deadline';
 
 interface JobCardProps {
   job: Job;
@@ -19,7 +20,13 @@ interface JobCardProps {
   compact?: boolean;
 }
 
-const statusColors: Record<JobStatus, string> = {
+const statusColors: Record<string, string> = {
+  'interested': 'bg-muted text-muted-foreground',
+  'applied': 'bg-primary/10 text-primary',
+  'phone_screen': 'bg-accent/10 text-accent',
+  'interview': 'bg-warning/10 text-warning',
+  'offer': 'bg-success/10 text-success',
+  'rejected': 'bg-destructive/10 text-destructive',
   'Interested': 'bg-muted text-muted-foreground',
   'Applied': 'bg-primary/10 text-primary',
   'Phone Screen': 'bg-accent/10 text-accent',
@@ -28,14 +35,7 @@ const statusColors: Record<JobStatus, string> = {
   'Rejected': 'bg-destructive/10 text-destructive',
 };
 
-const statusLabels: Record<JobStatus, string> = {
-  'Interested': 'Interested',
-  'Applied': 'Applied',
-  'Phone Screen': 'Phone Screen',
-  'Interview': 'Interview',
-  'Offer': 'Offer',
-  'Rejected': 'Rejected',
-};
+// Status labels removed - using getStatusLabel from constants instead
 
 export const JobCard = ({
   job,
@@ -49,17 +49,9 @@ export const JobCard = ({
 }: JobCardProps) => {
   const statusDate = job.status_updated_at || job.created_at;
   const daysInStage = statusDate ? differenceInDays(new Date(), new Date(statusDate)) : 0;
-  const daysUntilDeadline = job.applicationDeadline
-    ? differenceInDays(new Date(job.applicationDeadline), new Date())
-    : null;
-
-  const getDeadlineColor = () => {
-    if (!daysUntilDeadline) return '';
-    if (daysUntilDeadline < 0) return 'text-destructive';
-    if (daysUntilDeadline <= 3) return 'text-warning';
-    if (daysUntilDeadline <= 7) return 'text-warning/70';
-    return 'text-muted-foreground';
-  };
+  
+  // Use new deadline utility
+  const deadlineInfo = getDeadlineInfo(job.application_deadline || job.applicationDeadline);
 
   return (
     <Card className={cn('hover-scale cursor-pointer', className)} onClick={() => onView?.(job)}>
@@ -99,9 +91,14 @@ export const JobCard = ({
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        <Badge className={cn('font-medium', statusColors[mapDBStatusToUI(job.status) as JobStatus])}>
-          {mapDBStatusToUI(job.status)}
-        </Badge>
+        <div className="flex items-center justify-between">
+          <Badge className={cn('font-medium', statusColors[job.status] || statusColors[getStatusLabel(job.status)])}>
+            {getStatusLabel(job.status)}
+          </Badge>
+          {deadlineInfo && deadlineInfo.status === 'urgent' && (
+            <AlertCircle className="h-4 w-4 text-destructive" />
+          )}
+        </div>
 
         <div className="space-y-2 text-sm">
           <div className="flex items-center gap-2 text-muted-foreground">
@@ -109,29 +106,25 @@ export const JobCard = ({
             <span className="truncate">{job.location}</span>
           </div>
 
-          {(job.salaryMin || job.salaryMax) && (
+          {(job.salary_min || job.salary_max || job.salaryMin || job.salaryMax) && (
             <div className="flex items-center gap-2 text-muted-foreground">
               <DollarSign className="h-4 w-4" />
               <span>
-                {job.salaryMin && job.salaryMax
-                  ? `$${job.salaryMin.toLocaleString()} - $${job.salaryMax.toLocaleString()}`
-                  : job.salaryMin
-                  ? `$${job.salaryMin.toLocaleString()}+`
-                  : `Up to $${job.salaryMax?.toLocaleString()}`}
+                {(job.salary_min || job.salaryMin) && (job.salary_max || job.salaryMax)
+                  ? `$${(job.salary_min || job.salaryMin)?.toLocaleString()} - $${(job.salary_max || job.salaryMax)?.toLocaleString()}`
+                  : (job.salary_min || job.salaryMin)
+                  ? `$${(job.salary_min || job.salaryMin)?.toLocaleString()}+`
+                  : `Up to $${(job.salary_max || job.salaryMax)?.toLocaleString()}`}
               </span>
             </div>
           )}
 
-          {job.applicationDeadline && (
-            <div className={cn('flex items-center gap-2', getDeadlineColor())}>
-              <Calendar className="h-4 w-4" />
-              <span>
-                {daysUntilDeadline! < 0
-                  ? 'Overdue'
-                  : daysUntilDeadline === 0
-                  ? 'Due today'
-                  : `${daysUntilDeadline} days left`}
-              </span>
+          {deadlineInfo && (
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className={cn('text-xs', deadlineInfo.badgeClass)}>
+                <Calendar className="h-3 w-3 mr-1" />
+                {deadlineInfo.label}
+              </Badge>
             </div>
           )}
 

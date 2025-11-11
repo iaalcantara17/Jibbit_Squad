@@ -1,10 +1,10 @@
 export type JobStatus = 
-  | "Interested" 
-  | "Applied" 
-  | "Phone Screen" 
-  | "Interview" 
-  | "Offer" 
-  | "Rejected";
+  | "interested" 
+  | "applied" 
+  | "phone_screen" 
+  | "interview" 
+  | "offer" 
+  | "rejected";
 
 export type JobType = 
   | "Full-time" 
@@ -66,12 +66,15 @@ export interface Job {
   jobType?: JobType;
   salaryMin?: number;
   salaryMax?: number;
+  salary_min?: number;
+  salary_max?: number;
   salaryCurrency?: string;
   jobDescription?: string;
   jobUrl?: string;
   status: JobStatus;
   statusHistory?: StatusHistoryEntry[];
   applicationDeadline?: string;
+  application_deadline?: string;
   appliedDate?: string;
   applicationMaterials?: ApplicationMaterials;
   notes?: string;
@@ -79,27 +82,26 @@ export interface Job {
   salaryNegotiationNotes?: string;
   contacts?: JobContact[];
   isArchived: boolean;
+  is_archived?: boolean;
   archiveReason?: string;
   archivedAt?: string;
   importedFrom?: string;
   createdAt: string;
+  created_at?: string;
   updatedAt: string;
+  updated_at?: string;
+  status_updated_at?: string;
   daysInStage?: number;
   deadlineUrgency?: DeadlineUrgency;
   resume_id?: string;
   cover_letter_id?: string;
   
-  // Legacy fields for compatibility (will be removed)
+  // Legacy fields for compatibility
   _id?: string;
   userId?: string;
   title?: string;
   company_name?: string;
   job_title?: string;
-  application_deadline?: string;
-  created_at?: string;
-  updated_at?: string;
-  status_updated_at?: string;
-  is_archived?: boolean;
   status_history?: StatusHistoryEntry[];
   company_info?: any;
 }

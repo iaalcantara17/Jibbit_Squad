@@ -1,12 +1,41 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigation } from '@/components/Navigation';
 import { ArrowRight, Briefcase, FileText, TrendingUp } from 'lucide-react';
 import { InfoCard } from '@/components/ui/info-card';
+import { useEffect } from 'react';
+import { toast } from 'sonner';
 
 const Index = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // Handle OAuth redirect: clean tokens/errors and navigate when signed in
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const hashParams = new URLSearchParams(url.hash.replace(/^#/, ''));
+    const searchParams = url.searchParams;
+
+    const hasAccessToken = hashParams.has('access_token') || hashParams.has('refresh_token');
+    const error = searchParams.get('error') || hashParams.get('error');
+    const errorDescription = searchParams.get('error_description') || hashParams.get('error_description');
+
+    if (error) {
+      toast.error(decodeURIComponent(errorDescription || 'Authentication failed'));
+    }
+
+    if (hasAccessToken || error) {
+      // Clean sensitive params from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
 
   return (
     <div className="min-h-screen flex flex-col">

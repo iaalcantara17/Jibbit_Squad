@@ -4,7 +4,7 @@ A comprehensive job application tracking system built with React, TypeScript, an
 
 ## Quickstart
 
-**Prerequisites**: Node 18+, npm, Supabase project
+**Prerequisites**: Node 18+, npm, Supabase project (or Lovable Cloud)
 
 **Setup**:
 ```bash

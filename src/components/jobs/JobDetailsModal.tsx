@@ -56,14 +56,27 @@ export const JobDetailsModal = ({ job, isOpen, onClose, onUpdate }: JobDetailsMo
   if (!job) return null;
 
   const handleSave = async () => {
+    if (!job.id) {
+      toast.error("Job ID is missing");
+      return;
+    }
+    
     setIsSaving(true);
     try {
-      await api.jobs.update(job.job_id, editedJob);
+      // Ensure we're using the correct field names for the database
+      const updateData = {
+        ...editedJob,
+        updated_at: new Date().toISOString(),
+      };
+      
+      await api.jobs.update(job.id, updateData);
       toast.success("Job updated successfully");
       setIsEditing(false);
+      setEditedJob({});
       onUpdate();
     } catch (error) {
-      toast.error("An error occurred while updating the job");
+      console.error('Update error:', error);
+      toast.error("Failed to update job");
     } finally {
       setIsSaving(false);
     }

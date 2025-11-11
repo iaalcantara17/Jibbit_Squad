@@ -6,26 +6,18 @@ import { JobCard } from './JobCard';
 import { Job } from '@/types/jobs';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
+import { PIPELINE_STAGES } from '@/lib/constants/jobStatus';
 
 interface JobPipelineProps {
   jobs: Job[];
   onJobUpdate: () => void;
 }
 
-const PIPELINE_STAGES = [
-  { id: 'interested', label: 'Interested', color: 'bg-blue-500' },
-  { id: 'applied', label: 'Applied', color: 'bg-yellow-500' },
-  { id: 'phone_screen', label: 'Phone Screen', color: 'bg-purple-500' },
-  { id: 'interview', label: 'Interview', color: 'bg-orange-500' },
-  { id: 'offer', label: 'Offer', color: 'bg-green-500' },
-  { id: 'rejected', label: 'Rejected', color: 'bg-red-500' },
-];
-
 export function JobPipeline({ jobs, onJobUpdate }: JobPipelineProps) {
   const [isDragging, setIsDragging] = useState(false);
 
   const getJobsByStatus = (status: string) => {
-    return jobs.filter(job => job.status === status && !job.isArchived);
+    return jobs.filter(job => job.status === status && !job.is_archived);
   };
 
   const handleDragStart = () => {
@@ -44,7 +36,11 @@ export function JobPipeline({ jobs, onJobUpdate }: JobPipelineProps) {
     const jobId = draggableId;
 
     try {
-      await api.jobs.updateStatus(jobId, newStatus);
+      // Update job status AND timestamp
+      await api.jobs.update(jobId, {
+        status: newStatus,
+        status_updated_at: new Date().toISOString(),
+      });
       toast.success('Job status updated');
       onJobUpdate();
     } catch (error) {
@@ -82,7 +78,7 @@ export function JobPipeline({ jobs, onJobUpdate }: JobPipelineProps) {
                     }`}
                   >
                     {stageJobs.map((job, index) => (
-                      <Draggable key={job.job_id} draggableId={job.job_id} index={index}>
+                      <Draggable key={job.id} draggableId={job.id} index={index}>
                         {(provided, snapshot) => (
                           <div
                             ref={provided.innerRef}
