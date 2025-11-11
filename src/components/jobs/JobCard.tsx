@@ -46,7 +46,8 @@ export const JobCard = ({
   className,
   compact,
 }: JobCardProps) => {
-  const daysInStage = job.daysInStage || differenceInDays(new Date(), new Date(job.createdAt));
+  const statusDate = job.status_updated_at || job.created_at;
+  const daysInStage = statusDate ? differenceInDays(new Date(), new Date(statusDate)) : 0;
   const daysUntilDeadline = job.applicationDeadline
     ? differenceInDays(new Date(job.applicationDeadline), new Date())
     : null;

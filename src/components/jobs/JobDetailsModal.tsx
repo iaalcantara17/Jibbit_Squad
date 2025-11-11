@@ -204,7 +204,7 @@ export const JobDetailsModal = ({ job, isOpen, onClose, onUpdate }: JobDetailsMo
 
           {/* Tabbed Content */}
           <Tabs defaultValue="description" className="w-full">
-            <TabsList className="grid w-full grid-cols-12 overflow-x-auto">
+            <TabsList className="w-full flex flex-wrap gap-1 h-auto justify-start">
               <TabsTrigger value="description">Description</TabsTrigger>
               <TabsTrigger value="materials">Materials</TabsTrigger>
               <TabsTrigger value="notes">Notes</TabsTrigger>

@@ -98,6 +98,7 @@ export interface Job {
   application_deadline?: string;
   created_at?: string;
   updated_at?: string;
+  status_updated_at?: string;
   is_archived?: boolean;
   status_history?: StatusHistoryEntry[];
   company_info?: any;

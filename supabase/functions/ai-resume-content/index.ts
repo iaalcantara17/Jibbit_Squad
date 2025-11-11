@@ -32,21 +32,30 @@ serve(async (req) => {
     const { jobId, sections } = await req.json();
 
     // Fetch user profile
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('user_id', user.id)
       .single();
 
+    if (profileError || !profile) {
+      console.error('Profile not found:', profileError);
+      return new Response(JSON.stringify({ error: 'Profile not found. Please complete your profile first.' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Fetch job details
-    const { data: job } = await supabase
+    const { data: job, error: jobError } = await supabase
       .from('jobs')
       .select('*')
       .eq('id', jobId)
       .eq('user_id', user.id)
       .single();
 
-    if (!job) {
+    if (jobError || !job) {
+      console.error('Job not found:', jobError);
       return new Response(JSON.stringify({ error: 'Job not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

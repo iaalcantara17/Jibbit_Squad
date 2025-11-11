@@ -29,12 +29,12 @@ const Jobs = () => {
 
   const statuses: Array<{ value: string; label: string; count: number }> = [
     { value: 'all', label: 'All Jobs', count: jobs.length },
-    { value: 'interested', label: 'Interested', count: jobs.filter(j => j.status === 'interested').length },
-    { value: 'applied', label: 'Applied', count: jobs.filter(j => j.status === 'applied').length },
-    { value: 'phone-screen', label: 'Phone Screen', count: jobs.filter(j => j.status === 'phone-screen').length },
-    { value: 'interview', label: 'Interview', count: jobs.filter(j => j.status === 'interview').length },
-    { value: 'offer', label: 'Offer', count: jobs.filter(j => j.status === 'offer').length },
-    { value: 'rejected', label: 'Rejected', count: jobs.filter(j => j.status === 'rejected').length },
+    { value: 'Interested', label: 'Interested', count: jobs.filter(j => j.status === 'Interested').length },
+    { value: 'Applied', label: 'Applied', count: jobs.filter(j => j.status === 'Applied').length },
+    { value: 'Phone Screen', label: 'Phone Screen', count: jobs.filter(j => j.status === 'Phone Screen').length },
+    { value: 'Interview', label: 'Interview', count: jobs.filter(j => j.status === 'Interview').length },
+    { value: 'Offer', label: 'Offer', count: jobs.filter(j => j.status === 'Offer').length },
+    { value: 'Rejected', label: 'Rejected', count: jobs.filter(j => j.status === 'Rejected').length },
   ];
 
   const fetchJobs = async () => {
