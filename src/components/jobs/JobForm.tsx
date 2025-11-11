@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { CreateJobData } from '@/types/jobs';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
+import { toDbStatus, JOB_STATUS } from '@/lib/constants/jobStatus';
 
 const jobSchema = z.object({
   title: z.string().min(1, 'Job title is required'),
@@ -27,7 +28,7 @@ const jobSchema = z.object({
   description: z.string().max(2000, 'Description must be less than 2000 characters'),
   industry: z.string().optional(),
   jobType: z.enum(['full-time', 'part-time', 'contract', 'internship', 'remote']).optional(),
-  status: z.enum(['interested', 'applied', 'phone-screen', 'interview', 'offer', 'rejected']).optional(),
+  status: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -46,7 +47,10 @@ export const JobForm = ({ initialData, onSuccess, onCancel }: JobFormProps) => {
 
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<JobFormData>({
     resolver: zodResolver(jobSchema),
-    defaultValues: initialData,
+    defaultValues: {
+      ...initialData,
+      status: initialData?.status || JOB_STATUS.INTERESTED,
+    },
   });
 
   const deadline = watch('applicationDeadline');
@@ -121,7 +125,7 @@ export const JobForm = ({ initialData, onSuccess, onCancel }: JobFormProps) => {
         salary_max: data.salaryMax,
         job_url: data.jobPostingUrl,
         application_deadline: data.applicationDeadline?.toISOString().split('T')[0],
-        status: data.status || 'interested',
+        status: toDbStatus(data.status || JOB_STATUS.INTERESTED),
         notes: data.notes,
       };
 

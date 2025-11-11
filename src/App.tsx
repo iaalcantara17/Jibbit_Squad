@@ -27,9 +27,10 @@ import EmailIntegration from "./pages/EmailIntegration";
 import EmailCallback from "./pages/EmailCallback";
 import PublicReviewerView from "./pages/PublicReviewerView";
 import NotFound from "./pages/NotFound";
-
+import AuthCallback from "./pages/AuthCallback";
+ 
 const queryClient = new QueryClient();
-
+ 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -40,6 +41,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/forgot-password/:token" element={<ForgotPassword />} />

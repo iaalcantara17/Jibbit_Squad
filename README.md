@@ -66,6 +66,39 @@ npm run test -- --coverage  # Run with coverage report
 - Client code uses only publishable keys (`VITE_SUPABASE_PUBLISHABLE_KEY`)
 - Never commit secrets to Git
 
+## Job Status System
+
+**Canonical Status Values** (stored as lowercase snake_case in database):
+- `interested` - Job discovered, not yet applied
+- `applied` - Application submitted
+- `phone_screen` - Phone screening scheduled/completed
+- `interview` - Interview scheduled/completed
+- `offer` - Offer received
+- `rejected` - Application rejected
+
+**Database Constraint**: The `jobs.status` column has a CHECK constraint enforcing these exact values.
+
+**Frontend Usage**:
+```typescript
+import { toDbStatus, JOB_STATUS, STATUS_LABELS } from '@/lib/constants/jobStatus';
+
+// Creating a job - always use toDbStatus()
+const jobData = {
+  status: toDbStatus(userInput), // Converts "Phone Screen" -> "phone_screen"
+};
+
+// Using constants
+const defaultStatus = JOB_STATUS.INTERESTED; // 'interested'
+const displayLabel = STATUS_LABELS[JOB_STATUS.PHONE_SCREEN]; // 'Phone Screen'
+```
+
+**Key Functions**:
+- `toDbStatus(input: string)`: Converts any format (UI label, mixed case) to canonical DB value
+- Auto-trims whitespace and normalizes case
+- Defaults unknown values to `interested`
+
+**Pipeline View**: Jobs are grouped by status; drag-and-drop automatically normalizes status values before DB update.
+
 ## Documentation
 
 - **Demo Script**: [DEMO_SCRIPT.md](./DEMO_SCRIPT.md) - Step-by-step walkthrough of all features

@@ -35,7 +35,7 @@ const Login = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.hostname === 'jibbit.app' ? 'https://jibbit.app' : window.location.origin}`,
+          redirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 

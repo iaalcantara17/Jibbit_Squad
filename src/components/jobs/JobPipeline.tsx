@@ -7,6 +7,7 @@ import { Job } from '@/types/jobs';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { PIPELINE_STAGES } from '@/lib/constants/jobStatus';
+import { toDbStatus } from '@/lib/constants/jobStatus';
 
 interface JobPipelineProps {
   jobs: Job[];
@@ -38,7 +39,7 @@ export function JobPipeline({ jobs, onJobUpdate }: JobPipelineProps) {
     try {
       // Update job status AND timestamp
       await api.jobs.update(jobId, {
-        status: newStatus,
+        status: toDbStatus(newStatus),
         status_updated_at: new Date().toISOString(),
       });
       toast.success('Job status updated');

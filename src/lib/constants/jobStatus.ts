@@ -21,6 +21,28 @@ export const STATUS_LABELS: Record<JobStatus, string> = {
   [JOB_STATUS.REJECTED]: 'Rejected',
 };
 
+// Convert UI label or any format to DB snake_case
+export function toDbStatus(status: string): JobStatus {
+  const normalized = status.toLowerCase().trim();
+  
+  // Direct match
+  if (Object.values(JOB_STATUS).includes(normalized as JobStatus)) {
+    return normalized as JobStatus;
+  }
+  
+  // Label to DB mapping
+  const labelMap: Record<string, JobStatus> = {
+    'interested': JOB_STATUS.INTERESTED,
+    'applied': JOB_STATUS.APPLIED,
+    'phone screen': JOB_STATUS.PHONE_SCREEN,
+    'interview': JOB_STATUS.INTERVIEW,
+    'offer': JOB_STATUS.OFFER,
+    'rejected': JOB_STATUS.REJECTED,
+  };
+  
+  return labelMap[normalized] || JOB_STATUS.INTERESTED;
+}
+
 // Pipeline stage configuration
 export const PIPELINE_STAGES = [
   { 
