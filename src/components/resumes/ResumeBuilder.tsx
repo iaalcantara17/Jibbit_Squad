@@ -287,7 +287,7 @@ export function ResumeBuilder({ resumeId, onSave }: ResumeBuilderProps) {
                   const newSection = {
                     id: `section_${Date.now()}`,
                     type: 'custom',
-                    title: 'New Section',
+                    title: '',
                     content: '',
                     order: sections.length,
                     isVisible: true
@@ -317,6 +317,7 @@ export function ResumeBuilder({ resumeId, onSave }: ResumeBuilderProps) {
                             updated[index].title = e.target.value;
                             setSections(updated);
                           }}
+                          placeholder="Enter section title..."
                           className="font-medium max-w-xs"
                         />
                         <Button 

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,7 +12,56 @@ serve(async (req) => {
   }
 
   try {
-    const { jobDescription, currentContent, profile } = await req.json();
+    const { jobId } = await req.json();
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    );
+
+    const authHeader = req.headers.get('Authorization')!;
+    const { data: { user }, error: authError } = await supabase.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    );
+
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Fetch user profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!profile) {
+      return new Response(JSON.stringify({ error: 'Please complete your profile first.' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Fetch job details
+    const { data: job } = await supabase
+      .from('jobs')
+      .select('*')
+      .eq('id', jobId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (!job) {
+      return new Response(JSON.stringify({ error: 'Job not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const jobDescription = job.job_description || `${job.job_title} at ${job.company_name}`;
+    const currentContent = profile.bio || '';
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -113,7 +163,15 @@ Provide 3-5 targeted suggestions to better highlight relevant experience.`;
       ? JSON.parse(toolCall.function.arguments)
       : { suggestions: [] };
 
-    return new Response(JSON.stringify(result), {
+    // Format for resume experience tailoring
+    const tailored = result.suggestions?.map((s: any) => ({
+      original: s.original,
+      improved: s.highlighted,
+      relevance: s.relevance,
+      reason: s.reason
+    })) || [];
+
+    return new Response(JSON.stringify({ tailored }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 

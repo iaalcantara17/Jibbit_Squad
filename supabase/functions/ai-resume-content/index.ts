@@ -36,14 +36,36 @@ serve(async (req) => {
       .from('profiles')
       .select('*')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
-    if (profileError || !profile) {
-      console.error('Profile not found:', profileError);
-      return new Response(JSON.stringify({ error: 'Profile not found. Please complete your profile first.' }), {
-        status: 404,
+    if (profileError) {
+      console.error('Error fetching profile:', profileError);
+      return new Response(JSON.stringify({ error: 'Error fetching profile' }), {
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    if (!profile) {
+      console.log('Profile not found, creating minimal profile data');
+      // Create a minimal profile if one doesn't exist
+      const { data: newProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert({
+          user_id: user.id,
+          name: user.email?.split('@')[0] || 'User',
+          email: user.email
+        })
+        .select()
+        .single();
+      
+      if (createError) {
+        console.error('Error creating profile:', createError);
+        return new Response(JSON.stringify({ error: 'Please complete your profile first to use AI features.' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     // Fetch job details
