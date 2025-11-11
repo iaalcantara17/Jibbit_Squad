@@ -19,7 +19,13 @@ export default function EmailIntegration() {
         body: {}
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes('OAUTH_NOT_CONFIGURED') || error.message?.includes('503')) {
+          toast.error('Email integration is not configured. Please contact support.');
+          return;
+        }
+        throw error;
+      }
 
       if (data?.authUrl) {
         // Open OAuth flow in a popup

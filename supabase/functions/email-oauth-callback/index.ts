@@ -71,7 +71,7 @@ serve(async (req) => {
         provider: 'google',
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
-        token_expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
+        expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
       }, {
         onConflict: 'user_id,provider',
       });

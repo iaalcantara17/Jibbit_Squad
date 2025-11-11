@@ -55,19 +55,22 @@ serve(async (req) => {
     // Build prompt based on tone and template
     const prompt = buildCoverLetterPrompt(profile, job, tone, template);
 
-    const openAIKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAIKey) {
-      throw new Error('OpenAI API key not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      return new Response(JSON.stringify({ error: { code: 'API_KEY_MISSING', message: 'API key not configured' } }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIKey}`,
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'google/gemini-2.5-flash',
         messages: [
           {
             role: 'system',
@@ -78,14 +81,28 @@ serve(async (req) => {
             content: prompt
           }
         ],
-        max_tokens: 1500,
-        temperature: 0.7,
       }),
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error?.message || 'OpenAI API error');
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: { code: 'RATE_LIMIT', message: 'Rate limit exceeded' } }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: { code: 'PAYMENT_REQUIRED', message: 'AI credits exhausted' } }), {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const errorText = await response.text();
+      console.error('AI API error:', response.status, errorText);
+      return new Response(JSON.stringify({ error: { code: 'AI_ERROR', message: 'Failed to generate cover letter' } }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const data = await response.json();
@@ -97,7 +114,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in ai-cover-letter-generate:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    return new Response(JSON.stringify({ error: { code: 'INTERNAL_ERROR', message: errorMessage } }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

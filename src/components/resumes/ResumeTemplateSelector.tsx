@@ -13,42 +13,84 @@ const TEMPLATES = [
     name: "Chronological",
     description: "Traditional format emphasizing work history",
     bestFor: "Most job seekers with consistent work history",
-    preview: "linear-gradient(to br, #3b82f6, #8b5cf6)"
+    preview: "linear-gradient(to br, #3b82f6, #8b5cf6)",
+    styles: {
+      fontFamily: "'Times New Roman', serif",
+      fontSize: "11pt",
+      lineHeight: "1.15",
+      headerStyle: "centered",
+      accentColor: "#3b82f6"
+    }
   },
   {
     id: "functional",
     name: "Functional",
     description: "Skills-focused format minimizing work history",
     bestFor: "Career changers or gaps in employment",
-    preview: "linear-gradient(to br, #ec4899, #f59e0b)"
+    preview: "linear-gradient(to br, #ec4899, #f59e0b)",
+    styles: {
+      fontFamily: "'Arial', sans-serif",
+      fontSize: "10.5pt",
+      lineHeight: "1.2",
+      headerStyle: "left-aligned",
+      accentColor: "#ec4899"
+    }
   },
   {
     id: "hybrid",
     name: "Hybrid",
     description: "Combines skills and chronological sections",
     bestFor: "Professionals with diverse skill sets",
-    preview: "linear-gradient(to br, #10b981, #3b82f6)"
+    preview: "linear-gradient(to br, #10b981, #3b82f6)",
+    styles: {
+      fontFamily: "'Calibri', sans-serif",
+      fontSize: "11pt",
+      lineHeight: "1.25",
+      headerStyle: "two-column",
+      accentColor: "#10b981"
+    }
   },
   {
     id: "modern",
     name: "Modern",
     description: "Clean, minimalist design with visual elements",
     bestFor: "Creative and tech professionals",
-    preview: "linear-gradient(to br, #8b5cf6, #ec4899)"
+    preview: "linear-gradient(to br, #8b5cf6, #ec4899)",
+    styles: {
+      fontFamily: "'Helvetica Neue', sans-serif",
+      fontSize: "10pt",
+      lineHeight: "1.3",
+      headerStyle: "sidebar",
+      accentColor: "#8b5cf6"
+    }
   },
   {
     id: "executive",
     name: "Executive",
     description: "Sophisticated format for senior positions",
     bestFor: "C-level and senior management roles",
-    preview: "linear-gradient(to br, #6b7280, #1f2937)"
+    preview: "linear-gradient(to br, #6b7280, #1f2937)",
+    styles: {
+      fontFamily: "'Georgia', serif",
+      fontSize: "11.5pt",
+      lineHeight: "1.4",
+      headerStyle: "centered-elegant",
+      accentColor: "#1f2937"
+    }
   },
   {
     id: "academic",
     name: "Academic",
     description: "Detailed format for research and education",
     bestFor: "Academic positions and research roles",
-    preview: "linear-gradient(to br, #0ea5e9, #06b6d4)"
+    preview: "linear-gradient(to br, #0ea5e9, #06b6d4)",
+    styles: {
+      fontFamily: "'Garamond', serif",
+      fontSize: "12pt",
+      lineHeight: "1.5",
+      headerStyle: "left-aligned-formal",
+      accentColor: "#0ea5e9"
+    }
   }
 ];
 

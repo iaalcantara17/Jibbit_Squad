@@ -15,7 +15,15 @@ serve(async (req) => {
     const redirectUri = Deno.env.get('GOOGLE_CALENDAR_REDIRECT_URI');
 
     if (!clientId || !redirectUri) {
-      throw new Error('Missing OAuth configuration');
+      return new Response(JSON.stringify({ 
+        error: { 
+          code: 'OAUTH_NOT_CONFIGURED', 
+          message: 'OAuth credentials not configured. Please contact support.' 
+        } 
+      }), {
+        status: 503,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const scopes = [

@@ -16,7 +16,18 @@ serve(async (req) => {
     const redirectUri = `${supabaseUrl}/functions/v1/email-oauth-callback`;
 
     if (!clientId) {
-      throw new Error('Missing OAuth configuration');
+      return new Response(
+        JSON.stringify({
+          error: {
+            code: 'OAUTH_NOT_CONFIGURED',
+            message: 'OAuth credentials not configured. Please contact support.',
+          },
+        }),
+        {
+          status: 503,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     const scopes = [
