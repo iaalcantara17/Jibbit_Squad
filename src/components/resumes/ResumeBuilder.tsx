@@ -280,7 +280,22 @@ export function ResumeBuilder({ resumeId, onSave }: ResumeBuilderProps) {
           <div className="border-t pt-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold">Resume Sections</h3>
-              <Button size="sm" variant="outline">
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => {
+                  const newSection = {
+                    id: `section_${Date.now()}`,
+                    type: 'custom',
+                    title: 'New Section',
+                    content: '',
+                    order: sections.length,
+                    isVisible: true
+                  };
+                  setSections([...sections, newSection]);
+                  toast.success('Section added');
+                }}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Section
               </Button>
