@@ -10,6 +10,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Edit, Trash2, Folder, Calendar, Link as LinkIcon, Github, Code2, Loader2, Grid3x3, List, Search, Share2, Download, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import { useProfileData } from './ProfileDataManager';
+import { useProfileRealtime } from '@/hooks/useProfileRealtime';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ProjectEntry {
   id: string;
@@ -28,8 +30,9 @@ type ViewMode = 'grid' | 'list';
 type SortBy = 'date' | 'name' | 'relevance';
 
 export const SpecialProjectsManagement = () => {
-  const { refreshProfile, profile } = useAuth();
+  const { refreshProfile, profile, user } = useAuth();
   const { updateProfileField } = useProfileData();
+  const queryClient = useQueryClient();
   const [entries, setEntries] = useState<ProjectEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
@@ -40,6 +43,9 @@ export const SpecialProjectsManagement = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [techFilter, setTechFilter] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('date');
+  
+  // Enable realtime updates
+  useProfileRealtime(user?.id);
   
   const [formData, setFormData] = useState<Omit<ProjectEntry, 'id'>>({
     name: '',
@@ -114,6 +120,9 @@ export const SpecialProjectsManagement = () => {
       if (editingId) {
         const updatedProjects = entries.map(p => p.id === editingId ? { ...formData, id: editingId } : p);
         await updateProfileField('projects', updatedProjects);
+        // Invalidate queries for immediate UI update
+        await queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
+        await queryClient.invalidateQueries({ queryKey: ['profileProjects', user?.id] });
         await fetchProjects();
         await refreshProfile();
         toast.success('Project updated successfully');
@@ -121,6 +130,9 @@ export const SpecialProjectsManagement = () => {
       } else {
         const newProject = { ...formData, id: crypto.randomUUID() };
         await updateProfileField('projects', [...entries, newProject]);
+        // Invalidate queries for immediate UI update
+        await queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
+        await queryClient.invalidateQueries({ queryKey: ['profileProjects', user?.id] });
         await fetchProjects();
         await refreshProfile();
         toast.success('Project added successfully');
@@ -155,6 +167,9 @@ export const SpecialProjectsManagement = () => {
     
     const updatedProjects = entries.filter(p => p.id !== deleteId);
     await updateProfileField('projects', updatedProjects);
+    // Invalidate queries for immediate UI update
+    await queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
+    await queryClient.invalidateQueries({ queryKey: ['profileProjects', user?.id] });
     await fetchProjects();
     await refreshProfile();
     toast.success('Project removed from your profile');

@@ -93,7 +93,29 @@ export function CoverLetterGenerator() {
     setIsGenerating(true);
     try {
       const result = await api.coverLetters.generate(selectedJob, tone, template);
+      
+      // Handle different response formats and error cases
+      if (!result) {
+        throw new Error('No response from AI service');
+      }
+      
+      // Check for error in response
+      if (result.error) {
+        const errorCode = result.error.code || result.error.message;
+        if (errorCode === 'RATE_LIMIT' || result.error.message?.includes('Rate limit')) {
+          throw new Error('Rate limit exceeded');
+        }
+        if (errorCode === 'PAYMENT_REQUIRED' || result.error.message?.includes('credits')) {
+          throw new Error('AI credits exhausted');
+        }
+        throw new Error(result.error.message || 'Failed to generate cover letter');
+      }
+      
       let generatedContent = result.content;
+      
+      if (!generatedContent) {
+        throw new Error('Generated content is empty');
+      }
 
       // Integrate company research if available
       if (companyResearch) {
@@ -104,12 +126,15 @@ export function CoverLetterGenerator() {
       setContent(generatedContent);
       toast.success('Cover letter generated successfully!');
     } catch (error: any) {
-      if (error.message?.includes('Rate limit')) {
+      const errorMsg = error.message || 'Unknown error';
+      if (errorMsg.includes('Rate limit')) {
         toast.error("Rate limit exceeded. Please try again later.");
-      } else if (error.message?.includes('credits')) {
+      } else if (errorMsg.includes('credits')) {
         toast.error("AI credits exhausted. Please add credits to continue.");
+      } else if (errorMsg.includes('PROFILE_REQUIRED')) {
+        toast.error('Please complete your profile first');
       } else {
-        toast.error('Failed to generate cover letter');
+        toast.error(`Failed to generate cover letter: ${errorMsg}`);
       }
       console.error('Error:', error);
     } finally {

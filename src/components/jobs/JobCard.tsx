@@ -6,6 +6,7 @@ import { MapPin, DollarSign, Calendar, ExternalLink, MoreVertical } from 'lucide
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { format, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { mapDBStatusToUI } from '@/lib/jobStatusMapping';
 
 interface JobCardProps {
   job: Job;
@@ -98,8 +99,8 @@ export const JobCard = ({
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        <Badge className={cn('font-medium', statusColors[job.status])}>
-          {statusLabels[job.status]}
+        <Badge className={cn('font-medium', statusColors[mapDBStatusToUI(job.status) as JobStatus])}>
+          {mapDBStatusToUI(job.status)}
         </Badge>
 
         <div className="space-y-2 text-sm">

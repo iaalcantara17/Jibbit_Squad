@@ -20,6 +20,7 @@ import {
 import { Filter, X, Search, Save } from "lucide-react";
 import { JobStatus, JobType, JobFilters as JobFiltersType } from "@/types/jobs";
 import { SavedSearchesDialog } from "./SavedSearchesDialog";
+import { mapUIStatusToDB, mapDBStatusToUI } from "@/lib/jobStatusMapping";
 
 interface JobFiltersProps {
   filters: JobFiltersType;
@@ -116,9 +117,9 @@ export const JobFilters = ({ filters, onFiltersChange, onClearFilters }: JobFilt
             <div className="space-y-2">
               <Label>Status</Label>
               <Select
-                value={filters.status || "all"}
+                value={filters.status ? mapDBStatusToUI(filters.status) : "all"}
                 onValueChange={(value) =>
-                  handleFilterChange("status", value === "all" ? undefined : (value as JobStatus))
+                  handleFilterChange("status", value === "all" ? undefined : mapUIStatusToDB(value as JobStatus))
                 }
               >
                 <SelectTrigger>

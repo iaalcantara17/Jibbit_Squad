@@ -10,6 +10,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Edit, Trash2, Award, Calendar, Building2, FileText, ExternalLink, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useProfileData } from './ProfileDataManager';
+import { useProfileRealtime } from '@/hooks/useProfileRealtime';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface Certification {
   id: string;
@@ -23,14 +25,18 @@ interface Certification {
 }
 
 export const CertificationsManagement = () => {
-  const { refreshProfile, profile } = useAuth();
+  const { refreshProfile, profile, user } = useAuth();
   const { updateProfileField } = useProfileData();
+  const queryClient = useQueryClient();
   const [certifications, setCertifications] = useState<Certification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Enable realtime updates
+  useProfileRealtime(user?.id);
   
   const [formData, setFormData] = useState<Omit<Certification, 'id'>>({
     name: '',
@@ -87,11 +93,17 @@ export const CertificationsManagement = () => {
       if (editingId) {
         const updatedCerts = certifications.map(c => c.id === editingId ? { ...formData, id: editingId } : c);
         await updateProfileField('certifications', updatedCerts);
+        // Invalidate queries for immediate UI update
+        await queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
+        await queryClient.invalidateQueries({ queryKey: ['profileCertifications', user?.id] });
         toast.success('Certification updated successfully');
         setEditingId(null);
       } else {
         const newCert = { ...formData, id: crypto.randomUUID() };
         await updateProfileField('certifications', [...certifications, newCert]);
+        // Invalidate queries for immediate UI update
+        await queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
+        await queryClient.invalidateQueries({ queryKey: ['profileCertifications', user?.id] });
         toast.success('Certification added successfully');
       }
 
@@ -124,6 +136,9 @@ export const CertificationsManagement = () => {
     
     const updatedCerts = certifications.filter(c => c.id !== deleteId);
     await updateProfileField('certifications', updatedCerts);
+    // Invalidate queries for immediate UI update
+    await queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
+    await queryClient.invalidateQueries({ queryKey: ['profileCertifications', user?.id] });
     toast.success('Certification removed from your profile');
     await refreshProfile();
     await fetchCertifications();
