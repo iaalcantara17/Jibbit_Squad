@@ -5,6 +5,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { seedSprint3Data, type Sprint3SeedResult } from './seedSprint3Data';
 
 type JobInsert = Database['public']['Tables']['jobs']['Insert'];
 type InterviewInsert = Database['public']['Tables']['interviews']['Insert'];
@@ -27,6 +28,8 @@ export interface SeedResult {
   referralRequests: number;
   professionalReferences: number;
   informationalInterviews: number;
+  // Sprint 3 additions
+  sprint3?: Sprint3SeedResult;
 }
 
 export async function seedDemoData(userId: string): Promise<SeedResult> {
@@ -503,16 +506,18 @@ export async function seedDemoData(userId: string): Promise<SeedResult> {
     result.offers = 2;
   }
 
-  // Seed contacts (8+)
+  // Seed contacts (10+ with UC-092 alumni/influencer data)
   const contactsData: ContactInsert[] = [
-    { user_id: userId, name: 'Alice Johnson', email: 'alice@example.com', company: 'TechCorp', role: 'Engineering Manager', relationship_type: 'Mentor', relationship_strength: 5, tags: ['tech', 'mentor'] },
-    { user_id: userId, name: 'Bob Smith', email: 'bob@example.com', company: 'DataFlow Inc', role: 'Senior Developer', relationship_type: 'Colleague', relationship_strength: 4, tags: ['tech', 'colleague'] },
-    { user_id: userId, name: 'Carol Davis', email: 'carol@example.com', company: 'InnovateLab', role: 'Product Manager', relationship_type: 'Professional', relationship_strength: 3 },
-    { user_id: userId, name: 'David Lee', email: 'david@example.com', company: 'CloudScale', role: 'Tech Lead', relationship_type: 'Professional', relationship_strength: 4, tags: ['tech', 'referral'] },
+    { user_id: userId, name: 'Alice Johnson', email: 'alice@example.com', company: 'TechCorp', role: 'Engineering Manager', relationship_type: 'Mentor', relationship_strength: 5, tags: ['tech', 'mentor'], school: 'MIT', degree: 'BS Computer Science', graduation_year: 2010 },
+    { user_id: userId, name: 'Bob Smith', email: 'bob@example.com', company: 'DataFlow Inc', role: 'Senior Developer', relationship_type: 'Colleague', relationship_strength: 4, tags: ['tech', 'colleague'], school: 'Stanford', degree: 'MS Computer Science', graduation_year: 2015 },
+    { user_id: userId, name: 'Carol Davis', email: 'carol@example.com', company: 'InnovateLab', role: 'Product Manager', relationship_type: 'Professional', relationship_strength: 3, school: 'UC Berkeley', degree: 'MBA', graduation_year: 2012 },
+    { user_id: userId, name: 'David Lee', email: 'david@example.com', company: 'CloudScale', role: 'Tech Lead', relationship_type: 'Professional', relationship_strength: 4, tags: ['tech', 'referral'], school: 'MIT', degree: 'BS EECS', graduation_year: 2013, is_influencer: true, influence_score: 8 },
     { user_id: userId, name: 'Emma Wilson', email: 'emma@example.com', company: 'DesignSys', role: 'UX Designer', relationship_type: 'Colleague', relationship_strength: 3 },
-    { user_id: userId, name: 'Frank Chen', email: 'frank@example.com', company: 'StartupXYZ', role: 'Founder', relationship_type: 'Professional', relationship_strength: 5, tags: ['startup', 'founder'] },
-    { user_id: userId, name: 'Grace Martinez', email: 'grace@example.com', company: 'TechCorp', role: 'Staff Engineer', relationship_type: 'Mentor', relationship_strength: 5, tags: ['tech', 'mentor'] },
-    { user_id: userId, name: 'Henry Taylor', email: 'henry@example.com', company: 'DataFlow Inc', role: 'VP Engineering', relationship_type: 'Referrer', relationship_strength: 4, tags: ['executive', 'referral'] },
+    { user_id: userId, name: 'Frank Chen', email: 'frank@example.com', company: 'StartupXYZ', role: 'Founder', relationship_type: 'Professional', relationship_strength: 5, tags: ['startup', 'founder'], is_industry_leader: true },
+    { user_id: userId, name: 'Grace Martinez', email: 'grace@example.com', company: 'TechCorp', role: 'Staff Engineer', relationship_type: 'Mentor', relationship_strength: 5, tags: ['tech', 'mentor'], school: 'Stanford', degree: 'PhD CS', graduation_year: 2008, is_industry_leader: true },
+    { user_id: userId, name: 'Henry Taylor', email: 'henry@example.com', company: 'DataFlow Inc', role: 'VP Engineering', relationship_type: 'Referrer', relationship_strength: 4, tags: ['executive', 'referral'], is_influencer: true, influence_score: 9 },
+    { user_id: userId, name: 'Iris Patel', email: 'iris@example.com', company: 'TechCorp', role: 'Senior Engineer', relationship_type: 'Colleague', relationship_strength: 3, school: 'MIT', degree: 'BS CS', graduation_year: 2016 },
+    { user_id: userId, name: 'Jack Williams', email: 'jack@example.com', company: 'CloudScale', role: 'Engineering Director', relationship_type: 'Professional', relationship_strength: 3, school: 'Stanford', degree: 'MS CS', graduation_year: 2011, is_influencer: true, influence_score: 7 },
   ];
 
   const { data: contacts } = await supabase
@@ -522,6 +527,30 @@ export async function seedDemoData(userId: string): Promise<SeedResult> {
 
   if (contacts) {
     result.contacts = contacts.length;
+
+    // Seed contact connections for 2nd/3rd degree (UC-092)
+    if (contacts.length >= 5) {
+      await supabase.from('contact_connections').upsert([
+        {
+          user_id: userId,
+          contact_id_a: contacts[0].id,
+          contact_id_b: contacts[3].id,
+          relationship_type: 'colleague',
+        },
+        {
+          user_id: userId,
+          contact_id_a: contacts[1].id,
+          contact_id_b: contacts[6].id,
+          relationship_type: 'classmate',
+        },
+        {
+          user_id: userId,
+          contact_id_a: contacts[3].id,
+          contact_id_b: contacts[8].id,
+          relationship_type: 'colleague',
+        },
+      ], { onConflict: 'user_id,contact_id_a,contact_id_b', ignoreDuplicates: false });
+    }
 
     // Seed contact interactions
     if (contacts[0]) {
@@ -556,18 +585,30 @@ export async function seedDemoData(userId: string): Promise<SeedResult> {
       ], { onConflict: 'user_id,contact_id,reminder_date' });
     }
 
-    // Seed referral requests
-    if (contacts[3] && firstJobId) {
-      await supabase.from('referral_requests').upsert({
-        user_id: userId,
-        contact_id: contacts[3].id,
-        job_id: firstJobId,
-        status: 'pending',
-        message_sent: 'Hi David, I saw an opening at TechCorp that aligns perfectly with my experience...',
-        last_action_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-        next_followup_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      }, { onConflict: 'user_id,contact_id,job_id' });
-      result.referralRequests = 1;
+    // Seed referral requests with multiple statuses (UC-087)
+    if (contacts[3] && contacts[7] && firstJobId && secondJobId) {
+      await supabase.from('referral_requests').upsert([
+        {
+          user_id: userId,
+          contact_id: contacts[3].id,
+          job_id: firstJobId,
+          status: 'pending',
+          message_sent: 'Hi David, I saw an opening at TechCorp that aligns perfectly with my experience...',
+          last_action_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+          next_followup_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          optimal_send_time: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 10 * 60 * 60 * 1000).toISOString(),
+        },
+        {
+          user_id: userId,
+          contact_id: contacts[7].id,
+          job_id: secondJobId || firstJobId,
+          status: 'accepted',
+          message_sent: 'Hi Henry, would you be willing to refer me for this VP role?',
+          last_action_at: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+          optimal_send_time: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000 + 14 * 60 * 60 * 1000).toISOString(),
+        },
+      ], { onConflict: 'user_id,contact_id,job_id', ignoreDuplicates: false });
+      result.referralRequests = 2;
     }
 
     // Seed professional references
@@ -642,7 +683,7 @@ export async function seedDemoData(userId: string): Promise<SeedResult> {
   }
 
   // Seed networking events
-  await supabase.from('networking_events').upsert([
+  const { data: events } = await supabase.from('networking_events').upsert([
     {
       user_id: userId,
       title: 'Tech Meetup - React Best Practices',
@@ -663,8 +704,26 @@ export async function seedDemoData(userId: string): Promise<SeedResult> {
       goals: 'Connect with recruiters, explore new opportunities',
       prep_checklist: ['Update resume', 'Prepare questions', 'Test video setup'],
     },
-  ], { onConflict: 'user_id,title,event_date' });
-  result.networkingEvents = 2;
+  ], { onConflict: 'user_id,title,event_date', ignoreDuplicates: false }).select();
+  result.networkingEvents = events?.length || 0;
+
+  // Seed event participants/speakers (UC-092)
+  if (events && events[0] && contacts && contacts.length >= 5) {
+    await supabase.from('event_participants').upsert([
+      {
+        user_id: userId,
+        event_id: events[0].id,
+        contact_id: contacts[6].id,
+        participant_role: 'speaker',
+      },
+      {
+        user_id: userId,
+        event_id: events[0].id,
+        contact_id: contacts[1].id,
+        participant_role: 'attendee',
+      },
+    ], { onConflict: 'user_id,event_id,contact_id', ignoreDuplicates: false });
+  }
 
   // Seed goals for tracking
   await supabase.from('goals').upsert([
@@ -700,6 +759,14 @@ export async function seedDemoData(userId: string): Promise<SeedResult> {
         notes: 'Researched company and practiced questions',
       },
     ], { onConflict: 'user_id,activity_type,started_at' });
+  }
+
+  // Seed Sprint 3 data (UC-112, UC-114, UC-115)
+  try {
+    const sprint3Result = await seedSprint3Data(userId);
+    result.sprint3 = sprint3Result;
+  } catch (error) {
+    console.error('Sprint 3 seeding error:', error);
   }
 
   return result;

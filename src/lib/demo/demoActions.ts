@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { SPRINT3_DEMO_ACTIONS } from './sprint3DemoActions';
 
 export interface DemoAction {
   id: string;
@@ -14,7 +15,7 @@ export interface DemoAction {
   verifyFn: (userId: string) => Promise<{ pass: boolean; message: string }>;
 }
 
-export const DEMO_ACTIONS: DemoAction[] = [
+const CORE_DEMO_ACTIONS: DemoAction[] = [
   // ACT 1: INTERVIEW PREP
   {
     id: 'schedule_interview',
@@ -639,3 +640,6 @@ export const DEMO_ACTIONS: DemoAction[] = [
     },
   },
 ];
+
+// Combine core and Sprint 3 actions
+export const DEMO_ACTIONS: DemoAction[] = [...CORE_DEMO_ACTIONS, ...SPRINT3_DEMO_ACTIONS];

@@ -510,6 +510,48 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_connections: {
+        Row: {
+          contact_id_a: string
+          contact_id_b: string
+          created_at: string | null
+          id: string
+          relationship_type: string | null
+          user_id: string
+        }
+        Insert: {
+          contact_id_a: string
+          contact_id_b: string
+          created_at?: string | null
+          id?: string
+          relationship_type?: string | null
+          user_id: string
+        }
+        Update: {
+          contact_id_a?: string
+          contact_id_b?: string
+          created_at?: string | null
+          id?: string
+          relationship_type?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_connections_contact_id_a_fkey"
+            columns: ["contact_id_a"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_connections_contact_id_b_fkey"
+            columns: ["contact_id_b"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_interactions: {
         Row: {
           contact_id: string
@@ -632,9 +674,14 @@ export type Database = {
         Row: {
           company: string | null
           created_at: string
+          degree: string | null
           email: string | null
+          graduation_year: number | null
           id: string
+          influence_score: number | null
           interests: string | null
+          is_industry_leader: boolean | null
+          is_influencer: boolean | null
           last_contacted_at: string | null
           linkedin_url: string | null
           name: string
@@ -643,6 +690,7 @@ export type Database = {
           relationship_strength: number | null
           relationship_type: string | null
           role: string | null
+          school: string | null
           tags: string[] | null
           updated_at: string
           user_id: string
@@ -650,9 +698,14 @@ export type Database = {
         Insert: {
           company?: string | null
           created_at?: string
+          degree?: string | null
           email?: string | null
+          graduation_year?: number | null
           id?: string
+          influence_score?: number | null
           interests?: string | null
+          is_industry_leader?: boolean | null
+          is_influencer?: boolean | null
           last_contacted_at?: string | null
           linkedin_url?: string | null
           name: string
@@ -661,6 +714,7 @@ export type Database = {
           relationship_strength?: number | null
           relationship_type?: string | null
           role?: string | null
+          school?: string | null
           tags?: string[] | null
           updated_at?: string
           user_id: string
@@ -668,9 +722,14 @@ export type Database = {
         Update: {
           company?: string | null
           created_at?: string
+          degree?: string | null
           email?: string | null
+          graduation_year?: number | null
           id?: string
+          influence_score?: number | null
           interests?: string | null
+          is_industry_leader?: boolean | null
+          is_influencer?: boolean | null
           last_contacted_at?: string | null
           linkedin_url?: string | null
           name?: string
@@ -679,6 +738,7 @@ export type Database = {
           relationship_strength?: number | null
           relationship_type?: string | null
           role?: string | null
+          school?: string | null
           tags?: string[] | null
           updated_at?: string
           user_id?: string
@@ -1121,6 +1181,93 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      event_participants: {
+        Row: {
+          contact_id: string
+          created_at: string | null
+          event_id: string
+          id: string
+          participant_role: string
+          user_id: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string | null
+          event_id: string
+          id?: string
+          participant_role: string
+          user_id: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          participant_role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_participants_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_participants_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "networking_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      family_supporters: {
+        Row: {
+          accepted_at: string | null
+          access_level: string
+          can_send_messages: boolean | null
+          created_at: string | null
+          id: string
+          invite_token: string
+          invited_at: string | null
+          is_muted: boolean | null
+          relationship: string
+          supporter_email: string
+          supporter_name: string
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          access_level?: string
+          can_send_messages?: boolean | null
+          created_at?: string | null
+          id?: string
+          invite_token: string
+          invited_at?: string | null
+          is_muted?: boolean | null
+          relationship: string
+          supporter_email: string
+          supporter_name: string
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          access_level?: string
+          can_send_messages?: boolean | null
+          created_at?: string | null
+          id?: string
+          invite_token?: string
+          invited_at?: string | null
+          is_muted?: boolean | null
+          relationship?: string
+          supporter_email?: string
+          supporter_name?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       forecasts: {
         Row: {
@@ -2833,6 +2980,7 @@ export type Database = {
           message_sent: string | null
           next_followup_at: string | null
           notes: string | null
+          optimal_send_time: string | null
           status: string
           updated_at: string
           user_id: string
@@ -2846,6 +2994,7 @@ export type Database = {
           message_sent?: string | null
           next_followup_at?: string | null
           notes?: string | null
+          optimal_send_time?: string | null
           status?: string
           updated_at?: string
           user_id: string
@@ -2859,6 +3008,7 @@ export type Database = {
           message_sent?: string | null
           next_followup_at?: string | null
           notes?: string | null
+          optimal_send_time?: string | null
           status?: string
           updated_at?: string
           user_id?: string
@@ -3270,6 +3420,41 @@ export type Database = {
         }
         Relationships: []
       }
+      supporter_messages: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message_text: string
+          supporter_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message_text: string
+          supporter_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message_text?: string
+          supporter_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supporter_messages_supporter_id_fkey"
+            columns: ["supporter_id"]
+            isOneToOne: false
+            referencedRelation: "family_supporters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_invitations: {
         Row: {
           accepted: boolean
@@ -3549,6 +3734,33 @@ export type Database = {
           target_value?: number
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_updates: {
+        Row: {
+          created_at: string | null
+          id: string
+          update_text: string
+          update_type: string
+          user_id: string
+          visibility: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          update_text: string
+          update_type: string
+          user_id: string
+          visibility?: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          update_text?: string
+          update_type?: string
+          user_id?: string
+          visibility?: string
         }
         Relationships: []
       }

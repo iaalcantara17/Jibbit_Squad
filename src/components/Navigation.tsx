@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { Menu, X, LogOut, User, Target, FileText, Mail, BarChart, Settings, Inbox, Calendar, Users, Users2, Brain, Code2, Heart } from 'lucide-react';
+import { Menu, X, LogOut, User, Target, FileText, Mail, BarChart, Settings, Inbox, Calendar, Users, Users2, Brain, Code2, Heart, Building2, GraduationCap, UserCircle } from 'lucide-react';
 import { useState } from 'react';
 import logo from '@/assets/logo.png';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -157,6 +157,33 @@ export const Navigation = () => {
               >
                 <Heart className="inline h-4 w-4 mr-1" />
                 Progress
+              </Link>
+              <Link
+                to="/peer-community"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  isActive('/peer-community') ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                <Users className="inline h-4 w-4 mr-1" />
+                Community
+              </Link>
+              <Link
+                to="/advisors"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  isActive('/advisors') ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                <UserCircle className="inline h-4 w-4 mr-1" />
+                Advisors
+              </Link>
+              <Link
+                to="/institutional-admin"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  isActive('/institutional-admin') ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                <GraduationCap className="inline h-4 w-4 mr-1" />
+                Institution
               </Link>
               <Link
                 to="/profile"
@@ -373,6 +400,42 @@ export const Navigation = () => {
                 >
                   <Heart className="inline h-4 w-4 mr-1" />
                   Progress
+                </Link>
+                <Link
+                  to="/peer-community"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/peer-community')
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <Users className="inline h-4 w-4 mr-1" />
+                  Community
+                </Link>
+                <Link
+                  to="/advisors"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/advisors')
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <UserCircle className="inline h-4 w-4 mr-1" />
+                  Advisors
+                </Link>
+                <Link
+                  to="/institutional-admin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/institutional-admin')
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <GraduationCap className="inline h-4 w-4 mr-1" />
+                  Institution
                 </Link>
                 <Link
                   to="/profile"

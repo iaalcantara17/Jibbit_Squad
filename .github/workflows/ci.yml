@@ -28,8 +28,11 @@ jobs:
     - name: Build project
       run: npm run build
 
+    - name: Run typecheck
+      run: npm run typecheck
+
     - name: Run tests with coverage
-      run: npm test -- --coverage
+      run: npm run test:coverage
 
     - name: Upload coverage (LCOV)
       uses: actions/upload-artifact@v4
@@ -55,3 +58,4 @@ jobs:
       run: |
         echo "Coverage thresholds enforced by Vitest config"
         echo "Global: ≥55%, Sprint-2 paths: ≥90% (branches ≥85%)"
+        echo "Sprint-3 paths: ≥90% (peer, institutional, advisor components)"
