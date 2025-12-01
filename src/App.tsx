@@ -67,6 +67,9 @@ import WeeklyProgress from "./pages/WeeklyProgress";
 import SharedProgress from "./pages/SharedProgress";
 import FamilyDashboard from "./pages/FamilyDashboard";
 import DemoSprint3 from "./pages/DemoSprint3";
+import PeerCommunity from "./pages/PeerCommunity";
+import InstitutionalAdmin from "./pages/InstitutionalAdmin";
+import AdvisorMarketplace from "./pages/AdvisorMarketplace";
 
 const queryClient = new QueryClient();
  
@@ -489,6 +492,30 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <FamilyDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/peer-community"
+                element={
+                  <ProtectedRoute>
+                    <PeerCommunity />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/institutional-admin"
+                element={
+                  <ProtectedRoute>
+                    <InstitutionalAdmin />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/advisors"
+                element={
+                  <ProtectedRoute>
+                    <AdvisorMarketplace />
                   </ProtectedRoute>
                 } 
               />

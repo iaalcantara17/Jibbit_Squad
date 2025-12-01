@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      advisor_profiles: {
+        Row: {
+          bio: string | null
+          created_at: string
+          display_name: string
+          hourly_rate: number | null
+          id: string
+          is_active: boolean
+          specialization: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          display_name: string
+          hourly_rate?: number | null
+          id?: string
+          is_active?: boolean
+          specialization?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          display_name?: string
+          hourly_rate?: number | null
+          id?: string
+          is_active?: boolean
+          specialization?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       application_events: {
         Row: {
           event_date: string | null
@@ -89,6 +125,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: []
       }
       automation_rule_runs: {
         Row: {
@@ -272,6 +338,123 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_participants: {
+        Row: {
+          challenge_id: string
+          completed_at: string | null
+          current_value: number
+          id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          completed_at?: string | null
+          current_value?: number
+          id?: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          completed_at?: string | null
+          current_value?: number
+          id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_participants_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "group_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coaching_sessions: {
+        Row: {
+          advisor_id: string
+          client_user_id: string
+          created_at: string
+          duration_minutes: number
+          id: string
+          meeting_link: string | null
+          notes: string | null
+          scheduled_date: string
+          session_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          advisor_id: string
+          client_user_id: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          meeting_link?: string | null
+          notes?: string | null
+          scheduled_date: string
+          session_type: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          advisor_id?: string
+          client_user_id?: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          meeting_link?: string | null
+          notes?: string | null
+          scheduled_date?: string
+          session_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coaching_sessions_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cohort_members: {
+        Row: {
+          cohort_id: string
+          enrollment_date: string
+          id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          cohort_id: string
+          enrollment_date?: string
+          id?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          cohort_id?: string
+          enrollment_date?: string
+          id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cohort_members_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "institutional_cohorts"
             referencedColumns: ["id"]
           },
         ]
@@ -651,6 +834,41 @@ export type Database = {
         }
         Relationships: []
       }
+      data_retention_policies: {
+        Row: {
+          auto_delete: boolean
+          created_at: string
+          entity_type: string
+          id: string
+          institution_id: string
+          retention_days: number
+        }
+        Insert: {
+          auto_delete?: boolean
+          created_at?: string
+          entity_type: string
+          id?: string
+          institution_id: string
+          retention_days: number
+        }
+        Update: {
+          auto_delete?: boolean
+          created_at?: string
+          entity_type?: string
+          id?: string
+          institution_id?: string
+          retention_days?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_retention_policies_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutional_settings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_comments: {
         Row: {
           comment_text: string
@@ -1009,6 +1227,150 @@ export type Database = {
         }
         Relationships: []
       }
+      group_challenges: {
+        Row: {
+          challenge_type: string
+          created_at: string
+          created_by: string
+          description: string
+          duration_days: number
+          end_date: string
+          group_id: string
+          id: string
+          start_date: string
+          target_value: number
+          title: string
+        }
+        Insert: {
+          challenge_type: string
+          created_at?: string
+          created_by: string
+          description: string
+          duration_days: number
+          end_date: string
+          group_id: string
+          id?: string
+          start_date: string
+          target_value: number
+          title: string
+        }
+        Update: {
+          challenge_type?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          duration_days?: number
+          end_date?: string
+          group_id?: string
+          id?: string
+          start_date?: string
+          target_value?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_challenges_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "support_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_posts: {
+        Row: {
+          content: string
+          created_at: string
+          group_id: string
+          id: string
+          is_anonymous: boolean
+          post_type: string
+          reaction_count: number
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          group_id: string
+          id?: string
+          is_anonymous?: boolean
+          post_type: string
+          reaction_count?: number
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          group_id?: string
+          id?: string
+          is_anonymous?: boolean
+          post_type?: string
+          reaction_count?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_posts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "support_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_webinars: {
+        Row: {
+          created_at: string
+          description: string
+          duration_minutes: number
+          group_id: string
+          host_name: string
+          id: string
+          meeting_link: string | null
+          recording_link: string | null
+          scheduled_date: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          duration_minutes?: number
+          group_id: string
+          host_name: string
+          id?: string
+          meeting_link?: string | null
+          recording_link?: string | null
+          scheduled_date: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          duration_minutes?: number
+          group_id?: string
+          host_name?: string
+          id?: string
+          meeting_link?: string | null
+          recording_link?: string | null
+          scheduled_date?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_webinars_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "support_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       informational_interviews: {
         Row: {
           contact_id: string
@@ -1058,6 +1420,80 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      institutional_cohorts: {
+        Row: {
+          cohort_name: string
+          created_at: string
+          description: string | null
+          end_date: string | null
+          id: string
+          institution_id: string
+          start_date: string
+        }
+        Insert: {
+          cohort_name: string
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          institution_id: string
+          start_date: string
+        }
+        Update: {
+          cohort_name?: string
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          institution_id?: string
+          start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "institutional_cohorts_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutional_settings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      institutional_settings: {
+        Row: {
+          created_at: string
+          created_by: string
+          custom_domain: string | null
+          id: string
+          institution_name: string
+          logo_url: string | null
+          primary_color: string | null
+          secondary_color: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          custom_domain?: string | null
+          id?: string
+          institution_name: string
+          logo_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          custom_domain?: string | null
+          id?: string
+          institution_name?: string
+          logo_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       interview_checklists: {
         Row: {
@@ -1916,6 +2352,53 @@ export type Database = {
           },
         ]
       }
+      peer_referrals: {
+        Row: {
+          application_url: string | null
+          company_name: string
+          created_at: string
+          description: string | null
+          expires_at: string | null
+          group_id: string
+          id: string
+          referral_type: string
+          role_title: string
+          shared_by_user_id: string
+        }
+        Insert: {
+          application_url?: string | null
+          company_name: string
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          group_id: string
+          id?: string
+          referral_type: string
+          role_title: string
+          shared_by_user_id: string
+        }
+        Update: {
+          application_url?: string | null
+          company_name?: string
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          group_id?: string
+          id?: string
+          referral_type?: string
+          role_title?: string
+          shared_by_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "peer_referrals_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "support_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       professional_references: {
         Row: {
           can_speak_to: string[] | null
@@ -2650,6 +3133,140 @@ export type Database = {
           name?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      session_payments: {
+        Row: {
+          advisor_id: string
+          amount: number
+          client_user_id: string
+          created_at: string
+          currency: string
+          id: string
+          paid_at: string | null
+          payment_provider: string | null
+          payment_status: string
+          provider_transaction_id: string | null
+          session_id: string
+        }
+        Insert: {
+          advisor_id: string
+          amount: number
+          client_user_id: string
+          created_at?: string
+          currency?: string
+          id?: string
+          paid_at?: string | null
+          payment_provider?: string | null
+          payment_status?: string
+          provider_transaction_id?: string | null
+          session_id: string
+        }
+        Update: {
+          advisor_id?: string
+          amount?: number
+          client_user_id?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          paid_at?: string | null
+          payment_provider?: string | null
+          payment_status?: string
+          provider_transaction_id?: string | null
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_payments_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_payments_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "coaching_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_group_members: {
+        Row: {
+          group_id: string
+          id: string
+          joined_at: string
+          privacy_level: string
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          joined_at?: string
+          privacy_level?: string
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          joined_at?: string
+          privacy_level?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "support_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_groups: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          group_type: string
+          id: string
+          industry: string | null
+          is_private: boolean
+          location: string | null
+          member_count: number
+          name: string
+          role: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          group_type: string
+          id?: string
+          industry?: string | null
+          is_private?: boolean
+          location?: string | null
+          member_count?: number
+          name: string
+          role?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          group_type?: string
+          id?: string
+          industry?: string | null
+          is_private?: boolean
+          location?: string | null
+          member_count?: number
+          name?: string
+          role?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
