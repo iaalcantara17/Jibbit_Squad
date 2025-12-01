@@ -15,6 +15,7 @@ interface JobCardProps {
   onEdit?: (job: Job) => void;
   onDelete?: (job: Job) => void;
   onArchive?: (job: Job) => void;
+  onViewOffers?: (job: Job) => void;
   onStatusChange?: (job: Job, status: Job['status']) => void;
   className?: string;
   compact?: boolean;
@@ -43,6 +44,7 @@ export const JobCard = ({
   onEdit,
   onDelete,
   onArchive,
+  onViewOffers,
   onStatusChange,
   className,
   compact,
@@ -71,6 +73,11 @@ export const JobCard = ({
               {onEdit && (
                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(job); }}>
                   Edit
+                </DropdownMenuItem>
+              )}
+              {onViewOffers && (
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onViewOffers(job); }}>
+                  View Offers & Negotiation
                 </DropdownMenuItem>
               )}
               {onArchive && (

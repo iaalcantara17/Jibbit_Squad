@@ -1,4 +1,5 @@
 // Enhanced Analytics Service for Job Search Tracking
+// Pure functions for metric computation - fully testable
 
 export interface JobAnalytics {
   total: number;
@@ -19,6 +20,125 @@ export interface JobAnalytics {
     count: number;
   }>;
 }
+
+// ========== Core Metrics (Pure Functions) ==========
+
+export const calculateApplicationsSent = (jobs: any[]): number => {
+  return jobs.filter(j => 
+    ['Applied', 'applied', 'Phone Screen', 'phone_screen', 'Interview', 'interview', 'Offer', 'offer', 'Rejected', 'rejected'].includes(j.status)
+  ).length;
+};
+
+export const calculateInterviewsScheduled = (interviews: any[]): number => {
+  return interviews.filter(i => i.scheduled_start || i.interview_date).length;
+};
+
+export const calculateOffersReceived = (jobs: any[], offers?: any[]): number => {
+  if (offers) return offers.length;
+  return jobs.filter(j => j.status === 'Offer' || j.status === 'offer').length;
+};
+
+export const calculateConversionRates = (jobs: any[]): {
+  appliedToInterview: number;
+  interviewToOffer: number;
+  appliedToOffer: number;
+} => {
+  const applied = calculateApplicationsSent(jobs);
+  const interviewed = jobs.filter(j => 
+    ['Interview', 'interview', 'Offer', 'offer'].includes(j.status)
+  ).length;
+  const offers = calculateOffersReceived(jobs);
+
+  return {
+    appliedToInterview: applied > 0 ? Math.round((interviewed / applied) * 100) : 0,
+    interviewToOffer: interviewed > 0 ? Math.round((offers / interviewed) * 100) : 0,
+    appliedToOffer: applied > 0 ? Math.round((offers / applied) * 100) : 0,
+  };
+};
+
+export const calculateMedianTimeToResponse = (jobs: any[], statusHistory: any[]): number | null => {
+  const historyByJob = statusHistory.reduce((acc, h) => {
+    if (!acc[h.job_id]) acc[h.job_id] = [];
+    acc[h.job_id].push(h);
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  const responseTimes: number[] = [];
+
+  jobs.forEach(job => {
+    const history = historyByJob[job.id];
+    if (!history || history.length < 2) return;
+
+    const sorted = history.sort((a, b) => 
+      new Date(a.changed_at).getTime() - new Date(b.changed_at).getTime()
+    );
+
+    const appliedEntry = sorted.find(h => h.to_status === 'Applied' || h.to_status === 'applied');
+    const responseEntry = sorted.find(h => 
+      ['Phone Screen', 'phone_screen', 'Interview', 'interview', 'Offer', 'offer', 'Rejected', 'rejected'].includes(h.to_status)
+    );
+
+    if (appliedEntry && responseEntry) {
+      const days = Math.floor(
+        (new Date(responseEntry.changed_at).getTime() - new Date(appliedEntry.changed_at).getTime()) / 
+        (1000 * 60 * 60 * 24)
+      );
+      if (days > 0) responseTimes.push(days);
+    }
+  });
+
+  if (responseTimes.length === 0) return null;
+
+  responseTimes.sort((a, b) => a - b);
+  const mid = Math.floor(responseTimes.length / 2);
+  return responseTimes.length % 2 === 0 
+    ? Math.round((responseTimes[mid - 1] + responseTimes[mid]) / 2)
+    : responseTimes[mid];
+};
+
+// ========== Filter Utilities ==========
+
+export const filterJobsByDateRange = (
+  jobs: any[], 
+  startDate: Date | null, 
+  endDate: Date | null
+): any[] => {
+  if (!startDate && !endDate) return jobs;
+
+  return jobs.filter(job => {
+    const jobDate = new Date(job.created_at);
+    if (startDate && jobDate < startDate) return false;
+    if (endDate && jobDate > endDate) return false;
+    return true;
+  });
+};
+
+export const filterJobsByCompany = (jobs: any[], company: string | null): any[] => {
+  if (!company) return jobs;
+  return jobs.filter(j => j.company_name?.toLowerCase().includes(company.toLowerCase()));
+};
+
+export const filterJobsByRole = (jobs: any[], role: string | null): any[] => {
+  if (!role) return jobs;
+  return jobs.filter(j => j.job_title?.toLowerCase().includes(role.toLowerCase()));
+};
+
+export const filterJobsByIndustry = (jobs: any[], industry: string | null): any[] => {
+  if (!industry) return jobs;
+  return jobs.filter(j => j.industry?.toLowerCase().includes(industry.toLowerCase()));
+};
+
+export const getUniqueCompanies = (jobs: any[]): string[] => {
+  return [...new Set(jobs.map(j => j.company_name).filter(Boolean))].sort();
+};
+
+export const getUniqueRoles = (jobs: any[]): string[] => {
+  return [...new Set(jobs.map(j => j.job_title).filter(Boolean))].sort();
+};
+
+export const getUniqueIndustries = (jobs: any[]): string[] => {
+  return [...new Set(jobs.map(j => j.industry).filter(Boolean))].sort();
+};
 
 export const calculateAverageTimeInStage = (jobs: any[], statusHistory: any[]): Record<string, number> => {
   const stageTime: Record<string, number[]> = {};

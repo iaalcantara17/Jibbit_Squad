@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { decryptToken, encryptToken } from '../_shared/encryption.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -57,17 +58,20 @@ serve(async (req) => {
       );
     }
 
-    let accessToken = integration.access_token;
+    // Decrypt the access token
+    let accessToken = await decryptToken(integration.access_token);
 
     // Check if token is expired and refresh if needed
     if (integration.token_expiry && new Date(integration.token_expiry) < new Date()) {
+      const decryptedRefreshToken = await decryptToken(integration.refresh_token);
+      
       const refreshResponse = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           client_id: Deno.env.get('GOOGLE_CALENDAR_CLIENT_ID') || '',
           client_secret: Deno.env.get('GOOGLE_CALENDAR_CLIENT_SECRET') || '',
-          refresh_token: integration.refresh_token,
+          refresh_token: decryptedRefreshToken,
           grant_type: 'refresh_token',
         }),
       });
@@ -75,11 +79,14 @@ serve(async (req) => {
       const refreshData = await refreshResponse.json();
       accessToken = refreshData.access_token;
 
+      // Encrypt new access token before storing
+      const encryptedAccessToken = await encryptToken(accessToken);
+
       // Update token in database
       await supabaseClient
         .from('calendar_integrations')
         .update({
-          access_token: accessToken,
+          access_token: encryptedAccessToken,
           token_expiry: new Date(Date.now() + refreshData.expires_in * 1000).toISOString(),
         })
         .eq('id', integration.id);

@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { Interview } from '@/types/interviews';
 
-interface Interview {
+// Legacy interface for backwards compatibility (deprecated, use Interview from types/interviews.ts)
+interface LegacyInterview {
   id: string;
   job_id: string;
   interview_type: string;

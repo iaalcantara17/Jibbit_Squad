@@ -51,6 +51,15 @@ verify_jwt = true
 [functions.ai-interview-prep]
 verify_jwt = true
 
+[functions.ai-interview-research]
+verify_jwt = true
+
+[functions.ai-question-feedback]
+verify_jwt = true
+
+[functions.ai-mock-interview-summary]
+verify_jwt = true
+
 [functions.execute-automation-rules]
 verify_jwt = false
 

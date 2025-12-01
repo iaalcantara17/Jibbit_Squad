@@ -7,9 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon, Clock, Video, Phone, Building } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Video, Phone, Building, Loader2 } from "lucide-react";
 import { format } from "date-fns";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface InterviewSchedulerProps {
   jobId: string;
@@ -19,52 +20,69 @@ interface InterviewSchedulerProps {
 }
 
 export interface InterviewData {
-  type: "phone" | "video" | "in-person";
+  type: "phone" | "video" | "onsite" | "remote";
   date: Date;
   time: string;
   duration: number;
   location?: string;
+  videoLink?: string;
   interviewers?: string;
   notes?: string;
 }
 
 export const InterviewScheduler = ({ jobId, jobTitle, companyName, onSchedule }: InterviewSchedulerProps) => {
-  const [type, setType] = useState<"phone" | "video" | "in-person">("video");
+  const [type, setType] = useState<"phone" | "video" | "onsite" | "remote">("video");
   const [date, setDate] = useState<Date>();
   const [time, setTime] = useState("");
   const [duration, setDuration] = useState("60");
   const [location, setLocation] = useState("");
+  const [videoLink, setVideoLink] = useState("");
   const [interviewers, setInterviewers] = useState("");
   const [notes, setNotes] = useState("");
-  const { toast } = useToast();
+  const [isScheduling, setIsScheduling] = useState(false);
 
   const handleSchedule = async () => {
     if (!date || !time) {
-      toast({ title: "Please select date and time", variant: "destructive" });
+      toast.error("Please select date and time");
+      return;
+    }
+
+    if (type === "video" && !videoLink && !location) {
+      toast.error("Please provide a video link or meeting location");
+      return;
+    }
+
+    if (type === "onsite" && !location) {
+      toast.error("Please provide the interview location");
       return;
     }
 
     try {
+      setIsScheduling(true);
       await onSchedule({
         type,
         date,
         time,
         duration: parseInt(duration),
-        location: type === "in-person" ? location : undefined,
+        location: type === "onsite" ? location : undefined,
+        videoLink: type === "video" ? videoLink : undefined,
         interviewers,
         notes,
       });
 
-      toast({ title: "Interview scheduled successfully" });
+      toast.success("Interview scheduled successfully");
       
       // Reset form
       setDate(undefined);
       setTime("");
       setLocation("");
+      setVideoLink("");
       setInterviewers("");
       setNotes("");
     } catch (error) {
-      toast({ title: "Failed to schedule interview", variant: "destructive" });
+      toast.error("Failed to schedule interview");
+    } finally {
+      setIsScheduling(false);
     }
   };
 
@@ -96,10 +114,16 @@ export const InterviewScheduler = ({ jobId, jobTitle, companyName, onSchedule }:
                   Video Call
                 </div>
               </SelectItem>
-              <SelectItem value="in-person">
+              <SelectItem value="onsite">
                 <div className="flex items-center gap-2">
                   <Building className="h-4 w-4" />
-                  In-Person
+                  On-Site
+                </div>
+              </SelectItem>
+              <SelectItem value="remote">
+                <div className="flex items-center gap-2">
+                  <Video className="h-4 w-4" />
+                  Remote
                 </div>
               </SelectItem>
             </SelectContent>
@@ -117,7 +141,14 @@ export const InterviewScheduler = ({ jobId, jobTitle, companyName, onSchedule }:
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
-                <Calendar mode="single" selected={date} onSelect={setDate} />
+                <Calendar 
+                  mode="single" 
+                  selected={date} 
+                  onSelect={setDate}
+                  disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
               </PopoverContent>
             </Popover>
           </div>
@@ -148,13 +179,25 @@ export const InterviewScheduler = ({ jobId, jobTitle, companyName, onSchedule }:
           </Select>
         </div>
 
-        {type === "in-person" && (
+        {type === "video" && (
           <div>
-            <Label>Location</Label>
+            <Label>Video Call Link</Label>
+            <Input
+              placeholder="Zoom, Google Meet, Teams link..."
+              value={videoLink}
+              onChange={(e) => setVideoLink(e.target.value)}
+            />
+          </div>
+        )}
+
+        {type === "onsite" && (
+          <div>
+            <Label>Location *</Label>
             <Input
               placeholder="Office address or meeting location"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
+              required
             />
           </div>
         )}
@@ -178,9 +221,18 @@ export const InterviewScheduler = ({ jobId, jobTitle, companyName, onSchedule }:
           />
         </div>
 
-        <Button onClick={handleSchedule} className="w-full">
-          <Clock className="h-4 w-4 mr-2" />
-          Schedule Interview
+        <Button onClick={handleSchedule} className="w-full" disabled={isScheduling}>
+          {isScheduling ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Scheduling...
+            </>
+          ) : (
+            <>
+              <Clock className="h-4 w-4 mr-2" />
+              Schedule Interview
+            </>
+          )}
         </Button>
       </CardContent>
     </Card>

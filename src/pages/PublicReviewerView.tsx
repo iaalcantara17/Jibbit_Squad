@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertCircle, MessageSquare, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import DOMPurify from "dompurify";
 
 interface Comment {
   id: string;
@@ -142,7 +143,12 @@ export default function PublicReviewerView() {
             <h2 className="text-xl font-semibold mb-3 text-primary">{section.title}</h2>
             <div 
               className="prose prose-sm max-w-none"
-              dangerouslySetInnerHTML={{ __html: section.content || '' }}
+              dangerouslySetInnerHTML={{ 
+                __html: DOMPurify.sanitize(section.content || '', {
+                  ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'span', 'div', 'a'],
+                  ALLOWED_ATTR: ['href', 'target', 'rel', 'class']
+                })
+              }}
             />
           </div>
         ))}

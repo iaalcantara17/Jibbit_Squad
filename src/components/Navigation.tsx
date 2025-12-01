@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { Menu, X, LogOut, User, Target, FileText, Mail, BarChart, Settings, Inbox } from 'lucide-react';
+import { Menu, X, LogOut, User, Target, FileText, Mail, BarChart, Settings, Inbox, Calendar, Users, Users2, Brain, Code2, Heart } from 'lucide-react';
 import { useState } from 'react';
 import logo from '@/assets/logo.png';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -78,6 +78,15 @@ export const Navigation = () => {
                 Analytics
               </Link>
               <Link
+                to="/interview-analytics"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  isActive('/interview-analytics') ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                <Calendar className="inline h-4 w-4 mr-1" />
+                Interview Analytics
+              </Link>
+              <Link
                 to="/automation"
                 className={`text-sm font-medium transition-colors hover:text-primary ${
                   isActive('/automation') ? 'text-primary' : 'text-muted-foreground'
@@ -94,6 +103,60 @@ export const Navigation = () => {
               >
                 <Inbox className="inline h-4 w-4 mr-1" />
                 Email
+              </Link>
+              <Link
+                to="/interview-prep"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  isActive('/interview-prep') ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                <Calendar className="inline h-4 w-4 mr-1" />
+                Interview Prep
+              </Link>
+              <Link
+                to="/question-bank"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  isActive('/question-bank') ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                <Brain className="inline h-4 w-4 mr-1" />
+                Question Bank
+              </Link>
+              <Link
+                to="/technical-prep"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  isActive('/technical-prep') ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                <Code2 className="inline h-4 w-4 mr-1" />
+                Technical Prep
+              </Link>
+              <Link
+                to="/network"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  isActive('/network') ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                <Users className="inline h-4 w-4 mr-1" />
+                Network
+              </Link>
+              <Link
+                to="/collaboration"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  isActive('/collaboration') ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                <Users2 className="inline h-4 w-4 mr-1" />
+                Collaboration
+              </Link>
+              <Link
+                to="/family-dashboard"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  isActive('/family-dashboard') ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                <Heart className="inline h-4 w-4 mr-1" />
+                Progress
               </Link>
               <Link
                 to="/profile"
@@ -204,6 +267,18 @@ export const Navigation = () => {
                   Analytics
                 </Link>
                 <Link
+                  to="/interview-analytics"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/interview-analytics')
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <Calendar className="inline h-4 w-4 mr-1" />
+                  Interview Analytics
+                </Link>
+                <Link
                   to="/automation"
                   onClick={() => setMobileMenuOpen(false)}
                   className={`block px-4 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -226,6 +301,78 @@ export const Navigation = () => {
                 >
                   <Inbox className="inline h-4 w-4 mr-1" />
                   Email
+                </Link>
+                <Link
+                  to="/interview-prep"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/interview-prep')
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <Calendar className="inline h-4 w-4 mr-1" />
+                  Interview Prep
+                </Link>
+                <Link
+                  to="/question-bank"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/question-bank')
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <Brain className="inline h-4 w-4 mr-1" />
+                  Question Bank
+                </Link>
+                <Link
+                  to="/technical-prep"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/technical-prep')
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <Code2 className="inline h-4 w-4 mr-1" />
+                  Technical Prep
+                </Link>
+                <Link
+                  to="/network"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/network')
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <Users className="inline h-4 w-4 mr-1" />
+                  Network
+                </Link>
+                <Link
+                  to="/collaboration"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/collaboration')
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <Users2 className="inline h-4 w-4 mr-1" />
+                  Collaboration
+                </Link>
+                <Link
+                  to="/family-dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/family-dashboard')
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <Heart className="inline h-4 w-4 mr-1" />
+                  Progress
                 </Link>
                 <Link
                   to="/profile"

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { decryptToken, encryptToken } from '../_shared/encryption.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -91,7 +92,8 @@ serve(async (req) => {
       throw new Error('Email integration not found');
     }
 
-    let accessToken = integration.access_token;
+    // Decrypt the access token
+    let accessToken = await decryptToken(integration.access_token);
 
     // Refresh token if expired
     if (new Date(integration.expires_at) < new Date()) {
@@ -102,12 +104,16 @@ serve(async (req) => {
         throw new Error('Missing OAuth configuration');
       }
 
-      accessToken = await refreshAccessToken(integration.refresh_token, clientId, clientSecret);
+      const decryptedRefreshToken = await decryptToken(integration.refresh_token);
+      accessToken = await refreshAccessToken(decryptedRefreshToken, clientId, clientSecret);
+
+      // Encrypt new access token before storing
+      const encryptedAccessToken = await encryptToken(accessToken);
 
       await supabaseClient
         .from('email_integrations')
         .update({
-          access_token: accessToken,
+          access_token: encryptedAccessToken,
           expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
         })
         .eq('id', integration.id);

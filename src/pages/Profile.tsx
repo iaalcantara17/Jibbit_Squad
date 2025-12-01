@@ -60,6 +60,9 @@ const Profile = () => {
     bio: '',
     industry: '',
     experienceLevel: '',
+    linkedinUrl: '',
+    githubUrl: '',
+    portfolioUrl: '',
   });
 
   useEffect(() => {
@@ -75,6 +78,9 @@ const Profile = () => {
           bio: userProfile?.bio || '',
           industry: (userProfile as any)?.industry || '',
           experienceLevel: (userProfile as any)?.experience_level || '',
+          linkedinUrl: (userProfile as any)?.linkedin_url || '',
+          githubUrl: (userProfile as any)?.github_url || '',
+          portfolioUrl: (userProfile as any)?.portfolio_url || '',
         });
         setProfilePicture((userProfile as any)?.avatar_url || null);
       }
@@ -257,6 +263,9 @@ const Profile = () => {
           bio: basicInfo.bio?.trim(),
           industry: basicInfo.industry?.trim(),
           experience_level: basicInfo.experienceLevel?.trim(),
+          linkedin_url: basicInfo.linkedinUrl?.trim(),
+          github_url: basicInfo.githubUrl?.trim(),
+          portfolio_url: basicInfo.portfolioUrl?.trim(),
         };
 
       await api.profile.update(updateData);
@@ -520,6 +529,44 @@ const Profile = () => {
                           <option value="Senior">Senior</option>
                           <option value="Executive">Executive</option>
                         </select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <Label className="text-base font-semibold">Professional Links</Label>
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="linkedinUrl">LinkedIn Profile</Label>
+                          <Input
+                            id="linkedinUrl"
+                            type="url"
+                            placeholder="https://linkedin.com/in/username"
+                            value={basicInfo.linkedinUrl}
+                            onChange={(e) => setBasicInfo({ ...basicInfo, linkedinUrl: e.target.value })}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="githubUrl">GitHub Profile</Label>
+                          <Input
+                            id="githubUrl"
+                            type="url"
+                            placeholder="https://github.com/username"
+                            value={basicInfo.githubUrl}
+                            onChange={(e) => setBasicInfo({ ...basicInfo, githubUrl: e.target.value })}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="portfolioUrl">Portfolio / Website</Label>
+                        <Input
+                          id="portfolioUrl"
+                          type="url"
+                          placeholder="https://yourwebsite.com"
+                          value={basicInfo.portfolioUrl}
+                          onChange={(e) => setBasicInfo({ ...basicInfo, portfolioUrl: e.target.value })}
+                        />
                       </div>
                     </div>
 

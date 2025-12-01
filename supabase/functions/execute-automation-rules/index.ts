@@ -1,9 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { corsHeaders, validateWebhookSignature } from '../_shared/http.ts';
 
 interface AutomationRule {
   id: string;
@@ -21,6 +17,33 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Validate webhook signature
+    const signature = req.headers.get('X-Webhook-Signature');
+    const webhookSecret = Deno.env.get('AUTOMATION_WEBHOOK_SECRET');
+    
+    if (!webhookSecret) {
+      console.error('AUTOMATION_WEBHOOK_SECRET not configured');
+      return new Response(
+        JSON.stringify({ error: 'Webhook secret not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Get raw body for signature validation
+    const rawBody = await req.text();
+    const isValidSignature = await validateWebhookSignature(rawBody, signature, webhookSecret);
+
+    if (!isValidSignature) {
+      console.error('Invalid webhook signature');
+      return new Response(
+        JSON.stringify({ error: 'Invalid webhook signature' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Webhook signature validated successfully');
+
+    try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -68,14 +91,26 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        processedRules: results.length,
-        results 
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          processedRules: results.length,
+          results 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+
+    } catch (error) {
+      console.error('Error in execute-automation-rules:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return new Response(
+        JSON.stringify({ error: errorMessage }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
 
   } catch (error) {
     console.error('Error in execute-automation-rules:', error);

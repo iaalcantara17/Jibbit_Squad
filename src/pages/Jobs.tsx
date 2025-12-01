@@ -8,6 +8,8 @@ import { Plus, LayoutGrid, TrendingUp, Calendar } from 'lucide-react';
 import { JobForm } from '@/components/jobs/JobForm';
 import { JobCard } from '@/components/jobs/JobCard';
 import { JobDetailsModal } from '@/components/jobs/JobDetailsModal';
+import { OffersList } from '@/components/jobs/OffersList';
+import { NegotiationPrep } from '@/components/jobs/NegotiationPrep';
 import { JobFilters } from '@/components/jobs/JobFilters';
 import { DeadlineCalendar } from '@/components/jobs/DeadlineCalendar';
 import { Job, JobFilters as JobFiltersType } from '@/types/jobs';
@@ -24,6 +26,8 @@ const Jobs = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [isOffersDialogOpen, setIsOffersDialogOpen] = useState(false);
+  const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'pipeline' | 'calendar'>(
     (searchParams.get('view') as any) || 'grid'
@@ -129,6 +133,20 @@ const Jobs = () => {
     } catch (error) {
       toast.error('Failed to archive job');
     }
+  };
+
+  const handleViewOffers = (job: Job) => {
+    setSelectedJob(job);
+    setIsOffersDialogOpen(true);
+    setSelectedOfferId(null);
+  };
+
+  const handleSelectOffer = (offerId: string) => {
+    setSelectedOfferId(offerId);
+  };
+
+  const handleBackToOffers = () => {
+    setSelectedOfferId(null);
   };
 
   const filteredJobs = selectedStatus === 'all'
@@ -242,6 +260,7 @@ const Jobs = () => {
                   onEdit={setSelectedJob}
                   onDelete={handleDeleteJob}
                   onArchive={handleArchiveJob}
+                  onViewOffers={handleViewOffers}
                 />
               ))}
             </div>
@@ -272,6 +291,25 @@ const Jobs = () => {
         onClose={() => setSelectedJob(null)}
         onUpdate={fetchJobs}
       />
+
+      {/* Offers & Negotiation Dialog */}
+      <Dialog open={isOffersDialogOpen} onOpenChange={setIsOffersDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          {selectedOfferId ? (
+            <NegotiationPrep 
+              offerId={selectedOfferId} 
+              onBack={handleBackToOffers}
+            />
+          ) : (
+            selectedJob && (
+              <OffersList 
+                jobId={selectedJob.id!} 
+                onSelectOffer={handleSelectOffer}
+              />
+            )
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

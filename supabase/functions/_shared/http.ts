@@ -38,3 +38,41 @@ export const handleCors = (req: Request): Response | null => {
   }
   return null;
 };
+
+/**
+ * Validates webhook signature using HMAC-SHA256
+ * @param payload - The raw request body
+ * @param signature - The signature from X-Webhook-Signature header
+ * @param secret - The webhook secret
+ * @returns true if signature is valid
+ */
+export async function validateWebhookSignature(
+  payload: string,
+  signature: string | null,
+  secret: string
+): Promise<boolean> {
+  if (!signature) {
+    return false;
+  }
+
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  const signatureBuffer = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    encoder.encode(payload)
+  );
+
+  const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+
+  return signature === expectedSignature;
+}

@@ -45,15 +45,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const importLinkedInProfile = async (user: any) => {
+    try {
+      // Check if user authenticated via LinkedIn
+      if (user.app_metadata?.provider === 'linkedin_oidc') {
+        const metadata = user.user_metadata;
+        
+        // Update profile with LinkedIn data
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            name: metadata.name || metadata.full_name,
+            avatar_url: metadata.avatar_url || metadata.picture,
+          })
+          .eq('user_id', user.id);
+
+        if (error) console.error('LinkedIn import error:', error);
+      }
+    } catch (error) {
+      console.error('Failed to import LinkedIn profile:', error);
+    }
+  };
+
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       
-      // Fetch profile when user signs in
+      // Fetch profile and import LinkedIn data when user signs in
       if (session?.user) {
         setTimeout(() => {
+          // Import LinkedIn profile on first login
+          if (event === 'SIGNED_IN' && session.user.app_metadata?.provider === 'linkedin_oidc') {
+            importLinkedInProfile(session.user);
+          }
           refreshProfile();
         }, 0);
       } else {

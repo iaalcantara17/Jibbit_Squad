@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Link } from "react-router-dom";
 import { 
   MapPin, 
   DollarSign, 
@@ -20,7 +21,8 @@ import {
   X,
   Plus,
   Trash2,
-  FileText
+  FileText,
+  Eye
 } from "lucide-react";
 import { JobMatchScore } from "./JobMatchScore";
 import { SkillsGapAnalysis } from "./SkillsGapAnalysis";
@@ -31,12 +33,15 @@ import { CompanyInfoSection } from "./CompanyInfoSection";
 import { CompanyNewsSection } from "./CompanyNewsSection";
 import { InterviewScheduler, InterviewData } from "./InterviewScheduler";
 import { ApplicationMaterialsDialog } from "./ApplicationMaterialsDialog";
+import { ReferralRequestsSection } from "./ReferralRequestsSection";
 import { format } from "date-fns";
 import { Job, JobContact } from "@/types/jobs";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { useInterviews } from "@/hooks/useInterviews";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface JobDetailsModalProps {
   job: Job | null;
@@ -46,6 +51,7 @@ interface JobDetailsModalProps {
 }
 
 export const JobDetailsModal = ({ job, isOpen, onClose, onUpdate }: JobDetailsModalProps) => {
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editedJob, setEditedJob] = useState<Partial<Job>>({});
@@ -116,18 +122,73 @@ export const JobDetailsModal = ({ job, isOpen, onClose, onUpdate }: JobDetailsMo
   };
 
   const handleScheduleInterview = async (interviewData: InterviewData) => {
+    if (!user) return;
+
     const interviewDateTime = new Date(interviewData.date);
     const [hours, minutes] = interviewData.time.split(':');
     interviewDateTime.setHours(parseInt(hours), parseInt(minutes));
 
-    await createInterview({
+    // Calculate scheduled_end from duration
+    const scheduledEnd = new Date(interviewDateTime.getTime() + interviewData.duration * 60000);
+
+    // Split interviewer names into array
+    const interviewerNames = interviewData.interviewers
+      ? interviewData.interviewers.split(',').map(name => name.trim()).filter(Boolean)
+      : [];
+
+    const result = await createInterview({
       job_id: job.id,
       interview_type: interviewData.type,
       interview_date: interviewDateTime.toISOString(),
       location: interviewData.location,
-      interviewer_name: interviewData.interviewers,
+      interviewer_name: interviewData.interviewers || null,
       notes: interviewData.notes,
     });
+
+    if (result) {
+      // Update with Sprint 3 fields
+      await supabase
+        .from('interviews')
+        .update({
+          scheduled_start: interviewDateTime.toISOString(),
+          scheduled_end: scheduledEnd.toISOString(),
+          video_link: interviewData.videoLink || null,
+          interviewer_names: interviewerNames.length > 0 ? interviewerNames : null,
+          duration_minutes: interviewData.duration,
+          status: 'scheduled',
+          outcome: 'pending',
+        })
+        .eq('id', result.id);
+
+      // Auto-generate default prep checklist
+      const defaultChecklistItems = [
+        { label: 'Research company background and recent news', category: 'Research', is_required: true },
+        { label: 'Review job description and requirements', category: 'Research', is_required: true },
+        { label: 'Prepare answers to common behavioral questions', category: 'Preparation', is_required: true },
+        { label: 'Prepare 3-5 questions for the interviewer', category: 'Preparation', is_required: true },
+        { label: 'Review your resume and be ready to discuss experience', category: 'Preparation', is_required: true },
+        { label: 'Prepare portfolio or work samples (if applicable)', category: 'Materials', is_required: false },
+        { label: 'Test video/audio setup (for virtual interviews)', category: 'Logistics', is_required: interviewData.type === 'video' },
+        { label: 'Plan your route and arrival time (for onsite)', category: 'Logistics', is_required: interviewData.type === 'onsite' },
+        { label: 'Choose professional attire', category: 'Logistics', is_required: true },
+      ];
+
+      // Insert checklist items
+      const checklistInserts = defaultChecklistItems.map(item => ({
+        interview_id: result.id,
+        user_id: user.id,
+        ...item,
+      }));
+
+      const { error: checklistError } = await supabase
+        .from('interview_checklists')
+        .insert(checklistInserts);
+
+      if (checklistError) {
+        console.error('Error creating prep checklist:', checklistError);
+        // Don't fail the whole operation if checklist fails
+      }
+    }
   };
 
   const statusColors: Record<string, string> = {
@@ -246,6 +307,7 @@ export const JobDetailsModal = ({ job, isOpen, onClose, onUpdate }: JobDetailsMo
               <TabsTrigger value="salary">Salary</TabsTrigger>
               <TabsTrigger value="prep">Prep</TabsTrigger>
               <TabsTrigger value="research">Research</TabsTrigger>
+              <TabsTrigger value="referrals">Referrals</TabsTrigger>
               <TabsTrigger value="history">History</TabsTrigger>
             </TabsList>
 
@@ -446,8 +508,8 @@ export const JobDetailsModal = ({ job, isOpen, onClose, onUpdate }: JobDetailsMo
                   <h3 className="font-semibold">Scheduled Interviews</h3>
                   {interviews.map((interview) => (
                     <div key={interview.id} className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1 flex-1">
                           <div className="flex items-center gap-2">
                             <Badge variant="outline">{interview.interview_type}</Badge>
                             <span className="text-sm">
@@ -473,13 +535,21 @@ export const JobDetailsModal = ({ job, isOpen, onClose, onUpdate }: JobDetailsMo
                             </Badge>
                           )}
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteInterview(interview.id, interview.calendar_event_id || undefined)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <div className="flex gap-2 flex-shrink-0">
+                          <Link to={`/interview/${interview.id}`}>
+                            <Button variant="outline" size="sm">
+                              <Eye className="h-4 w-4 mr-1" />
+                              Details
+                            </Button>
+                          </Link>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteInterview(interview.id, interview.calendar_event_id || undefined)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -539,6 +609,10 @@ export const JobDetailsModal = ({ job, isOpen, onClose, onUpdate }: JobDetailsMo
                   )}
                 </>
               )}
+            </TabsContent>
+
+            <TabsContent value="referrals" className="space-y-4">
+              <ReferralRequestsSection job={displayJob} />
             </TabsContent>
 
             <TabsContent value="history" className="space-y-3">
