@@ -4,21 +4,28 @@ import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
 import { ResumeTemplateManager } from '@/components/resumes/ResumeTemplateManager';
 
-vi.mock('@/integrations/supabase/client', () => ({
-  supabase: {
-    auth: { getUser: vi.fn(() => Promise.resolve({ data: { user: { id: 'user1' } } })) },
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          order: vi.fn(() => Promise.resolve({ data: [] })),
+vi.mock('@/integrations/supabase/client', () => {
+  const mockOrder = vi.fn(function() {
+    return {
+      order: mockOrder,
+      then: (resolve: any) => resolve({ data: [] }),
+    };
+  });
+
+  return {
+    supabase: {
+      auth: { getUser: vi.fn(() => Promise.resolve({ data: { user: { id: 'user1' } } })) },
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => mockOrder()),
         })),
+        insert: vi.fn(() => Promise.resolve({ error: null })),
+        update: vi.fn(() => ({ eq: vi.fn(() => Promise.resolve({ error: null })) })),
+        delete: vi.fn(() => ({ eq: vi.fn(() => Promise.resolve({ error: null })) })),
       })),
-      insert: vi.fn(() => Promise.resolve({ error: null })),
-      update: vi.fn(() => ({ eq: vi.fn(() => Promise.resolve({ error: null })) })),
-      delete: vi.fn(() => ({ eq: vi.fn(() => Promise.resolve({ error: null })) })),
-    })),
-  },
-}));
+    },
+  };
+});
 
 vi.mock('@/hooks/use-toast', () => ({
   useToast: () => ({ toast: vi.fn() }),
