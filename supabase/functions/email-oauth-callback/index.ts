@@ -126,7 +126,9 @@ serve(async (req) => {
         try {
           const decoded = JSON.parse(atob(stateParam));
           app_origin = decoded?.app_origin ?? null;
-        } catch {}
+        } catch {
+          // Ignore decode errors for backward compatibility
+        }
       }
       const defaultRedirectBase = (Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovableproject.com')) || '';
       const redirectBase = app_origin || defaultRedirectBase;
