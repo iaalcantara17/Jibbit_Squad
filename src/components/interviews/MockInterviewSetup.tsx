@@ -68,12 +68,18 @@ export function MockInterviewSetup({ open, onOpenChange }: MockInterviewSetupPro
     setLoading(true);
 
     try {
+      // Verify authentication before creating session
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      if (!authSession?.user) {
+        throw new Error('Authentication required. Please log in again.');
+      }
+
       const selectedJobData = selectedJob ? jobs.find(j => j.id === selectedJob) : null;
 
       const { data: session, error } = await supabase
         .from('mock_interview_sessions')
         .insert({
-          user_id: user.id,
+          user_id: authSession.user.id,
           job_id: selectedJob || null,
           target_role: targetRole,
           company_name: selectedJobData?.company_name || null,
@@ -86,18 +92,25 @@ export function MockInterviewSetup({ open, onOpenChange }: MockInterviewSetupPro
 
       if (error) throw error;
 
+      if (!session) {
+        throw new Error('Failed to create interview session');
+      }
+
       toast({
         title: 'Mock interview started',
         description: 'Get ready to answer your questions!',
       });
 
       onOpenChange(false);
+      
+      // Small delay to ensure insert is committed before navigation
+      await new Promise(resolve => setTimeout(resolve, 100));
       navigate(`/mock-interview/${session.id}`);
     } catch (error) {
       console.error('Error starting mock interview:', error);
       toast({
         title: 'Error',
-        description: 'Failed to start mock interview. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to start mock interview. Please try again.',
         variant: 'destructive',
       });
     } finally {
