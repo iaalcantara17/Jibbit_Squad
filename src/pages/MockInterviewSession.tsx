@@ -9,7 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowRight, CheckCircle, Clock, Loader2 } from 'lucide-react';
+import { ArrowRight, CheckCircle, Clock, Loader2, AlertCircle } from 'lucide-react';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 interface Question {
   id: string;
@@ -43,13 +44,18 @@ export default function MockInterviewSession() {
   const [currentResponse, setCurrentResponse] = useState('');
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadSession();
   }, [sessionId, user]);
 
   const loadSession = async () => {
-    if (!user || !sessionId) return;
+    if (!user || !sessionId) {
+      setError('Missing user or session information');
+      setLoading(false);
+      return;
+    }
 
     try {
       const { data: sessionData, error: sessionError } = await supabase
@@ -57,9 +63,16 @@ export default function MockInterviewSession() {
         .select('*')
         .eq('id', sessionId)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (sessionError) throw sessionError;
+      
+      if (!sessionData) {
+        setError('Session not found or you do not have permission to access it');
+        setLoading(false);
+        return;
+      }
+      
       setSession(sessionData);
 
       // Load existing responses
@@ -82,7 +95,9 @@ export default function MockInterviewSession() {
         .eq('role_title', sessionData.target_role)
         .limit(sessionData.question_count);
 
-      if (questionError) throw questionError;
+      if (questionError) {
+        console.error('Error loading questions:', questionError);
+      }
 
       // If we don't have enough questions for exact role, get general questions
       if (!questionData || questionData.length < sessionData.question_count) {
@@ -92,7 +107,22 @@ export default function MockInterviewSession() {
           .eq('category', sessionData.format)
           .limit(sessionData.question_count);
 
-        setQuestions((fallbackQuestions || []) as Question[]);
+        if (fallbackQuestions && fallbackQuestions.length > 0) {
+          setQuestions(fallbackQuestions as Question[]);
+        } else {
+          // Last resort: get any questions
+          const { data: anyQuestions } = await supabase
+            .from('question_bank_items')
+            .select('*')
+            .limit(sessionData.question_count);
+          
+          if (!anyQuestions || anyQuestions.length === 0) {
+            setError('No questions available. Please add questions to the question bank first.');
+            setLoading(false);
+            return;
+          }
+          setQuestions(anyQuestions as Question[]);
+        }
       } else {
         setQuestions(questionData as Question[]);
       }
@@ -185,12 +215,53 @@ export default function MockInterviewSession() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navigation />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <Card className="max-w-md w-full">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-destructive" />
+                <CardTitle>Unable to Load Interview</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">{error}</p>
+              <div className="flex gap-2">
+                <Button onClick={() => navigate('/interview-prep')} className="flex-1">
+                  Back to Interview Prep
+                </Button>
+                <Button variant="outline" onClick={() => window.location.reload()} className="flex-1">
+                  Retry
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   if (!session || questions.length === 0) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navigation />
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-muted-foreground">No questions available for this session</p>
+        <div className="flex-1 flex items-center justify-center p-4">
+          <Card className="max-w-md w-full">
+            <CardHeader>
+              <CardTitle>No Questions Available</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                There are no questions available for this interview session. Please add questions to the question bank first.
+              </p>
+              <Button onClick={() => navigate('/question-bank')} className="w-full">
+                Go to Question Bank
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -200,9 +271,10 @@ export default function MockInterviewSession() {
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navigation />
-      <div className="flex-1 container py-8">
+    <ErrorBoundary>
+      <div className="min-h-screen flex flex-col">
+        <Navigation />
+        <div className="flex-1 container py-8 px-4">
         <div className="max-w-3xl mx-auto space-y-6">
           {/* Header */}
           <div className="space-y-2">
@@ -313,5 +385,6 @@ export default function MockInterviewSession() {
         </div>
       </div>
     </div>
+    </ErrorBoundary>
   );
 }

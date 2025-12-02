@@ -4,9 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { User, DollarSign } from 'lucide-react';
+import { User, DollarSign, X } from 'lucide-react';
+import { AdvisorScheduling } from './AdvisorScheduling';
+import { useState } from 'react';
 
 export const AdvisorDirectory = () => {
+  const [selectedAdvisorId, setSelectedAdvisorId] = useState<string | null>(null);
+  
   const { data: advisors } = useQuery({
     queryKey: ['advisor-profiles'],
     queryFn: async () => {
@@ -19,6 +23,26 @@ export const AdvisorDirectory = () => {
       return data;
     },
   });
+
+  const selectedAdvisor = advisors?.find(a => a.id === selectedAdvisorId);
+
+  if (selectedAdvisorId && selectedAdvisor) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold">Book Session with {selectedAdvisor.display_name}</h2>
+          <Button variant="ghost" onClick={() => setSelectedAdvisorId(null)}>
+            <X className="h-4 w-4 mr-2" />
+            Back to Directory
+          </Button>
+        </div>
+        <AdvisorScheduling 
+          advisorId={selectedAdvisorId}
+          hourlyRate={selectedAdvisor.hourly_rate || undefined}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -39,9 +63,9 @@ export const AdvisorDirectory = () => {
                     <User className="h-6 w-6" />
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1">
-                  <CardTitle>{advisor.display_name}</CardTitle>
-                  <CardDescription className="mt-1">{advisor.bio}</CardDescription>
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="break-words">{advisor.display_name}</CardTitle>
+                  <CardDescription className="mt-1 break-words">{advisor.bio}</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -60,7 +84,9 @@ export const AdvisorDirectory = () => {
                     <span>{advisor.hourly_rate}/hour</span>
                   </div>
                 )}
-                <Button size="sm">Book Session</Button>
+                <Button size="sm" onClick={() => setSelectedAdvisorId(advisor.id)}>
+                  Book Session
+                </Button>
               </div>
             </CardContent>
           </Card>

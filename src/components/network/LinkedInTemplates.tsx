@@ -2,8 +2,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Copy, Check } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const connectionRequestTemplates = [
   {
@@ -36,11 +38,30 @@ const outreachTemplates = [
 ];
 
 export const LinkedInTemplates = () => {
+  const { user } = useAuth();
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>('Your Name');
+
+  useEffect(() => {
+    const loadUserName = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('user_id', user.id)
+        .single();
+      if (data?.name) {
+        setUserName(data.name);
+      }
+    };
+    loadUserName();
+  }, [user]);
 
   const copyToClipboard = async (text: string, id: string) => {
     try {
-      await navigator.clipboard.writeText(text);
+      // Replace [Your Name] placeholder with actual user name
+      const personalizedText = text.replace(/\[Your Name\]/g, userName);
+      await navigator.clipboard.writeText(personalizedText);
       setCopiedId(id);
       toast.success('Template copied to clipboard');
       setTimeout(() => setCopiedId(null), 2000);

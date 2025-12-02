@@ -1,6 +1,7 @@
 import { Navigation } from '@/components/Navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building2, Users, Shield, FileText } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Building2, Users, Shield, FileText, Info } from 'lucide-react';
 import { InstitutionalSettings } from '@/components/institutional/InstitutionalSettings';
 import { BulkOnboarding } from '@/components/institutional/BulkOnboarding';
 import { ComplianceManager } from '@/components/institutional/ComplianceManager';
@@ -10,8 +11,8 @@ const InstitutionalAdmin = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navigation />
-      <div className="flex-1 container py-8">
-        <div className="max-w-6xl mx-auto space-y-6">
+      <div className="flex-1 container py-8 max-w-7xl mx-auto px-4">
+        <div className="space-y-6">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-primary/10 p-3">
               <Building2 className="h-6 w-6 text-primary" />
@@ -22,23 +23,43 @@ const InstitutionalAdmin = () => {
             </div>
           </div>
 
+          <Card className="border-primary/20 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Info className="h-5 w-5" />
+                About Institutional Features
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Institutional features are designed for universities, career centers, and organizations managing large groups of job seekers.
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-4">
+                <li><strong>White-Label Settings:</strong> Customize branding, colors, and domain for your institution</li>
+                <li><strong>Bulk Onboarding:</strong> Import and manage cohorts of students or participants</li>
+                <li><strong>Compliance:</strong> FERPA, GDPR, and data retention policy management</li>
+                <li><strong>Reporting:</strong> Aggregate analytics across all participants</li>
+              </ul>
+            </CardContent>
+          </Card>
+
           <Tabs defaultValue="settings" className="w-full">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="settings" className="flex items-center gap-2">
                 <Building2 className="h-4 w-4" />
-                White-Label Settings
+                <span className="hidden sm:inline">White-Label</span>
               </TabsTrigger>
               <TabsTrigger value="onboarding" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                Bulk Onboarding
+                <span className="hidden sm:inline">Onboarding</span>
               </TabsTrigger>
               <TabsTrigger value="compliance" className="flex items-center gap-2">
                 <Shield className="h-4 w-4" />
-                Compliance
+                <span className="hidden sm:inline">Compliance</span>
               </TabsTrigger>
               <TabsTrigger value="reporting" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
-                Reporting
+                <span className="hidden sm:inline">Reporting</span>
               </TabsTrigger>
             </TabsList>
 

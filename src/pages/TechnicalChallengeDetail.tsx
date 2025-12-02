@@ -497,27 +497,39 @@ export default function TechnicalChallengeDetail() {
               {previousAttempts.length > 0 && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Previous Attempts</CardTitle>
+                    <CardTitle>Previous Attempts ({previousAttempts.length})</CardTitle>
                     <CardDescription>
-                      {previousAttempts.length} attempt{previousAttempts.length > 1 ? 's' : ''} recorded
+                      Click on any attempt to view its details
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
                       {previousAttempts.slice(0, 5).map((attempt) => (
-                        <div key={attempt.id} className="flex items-center justify-between p-3 rounded-lg border">
+                        <button
+                          key={attempt.id}
+                          onClick={() => {
+                            setSolutionCode(attempt.solution_code || '');
+                            setLanguage(attempt.language || 'javascript');
+                            setNotes(attempt.notes || '');
+                            setRubric(attempt.rubric_checklist || rubric);
+                            setElapsedTime(attempt.time_taken || 0);
+                            toast({
+                              title: 'Attempt Loaded',
+                              description: 'Previous attempt has been loaded into the editor',
+                            });
+                          }}
+                          className="w-full flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors text-left"
+                        >
                           <div className="flex-1">
                             <p className="text-sm font-medium">
-                              {attempt.status === 'submitted' ? 'Submitted' : 'Draft'}
+                              {attempt.status === 'submitted' ? 'Submitted' : 'Draft'} - {attempt.language}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {attempt.time_taken ? formatTime(attempt.time_taken) : 'No time recorded'}
+                              {attempt.time_taken ? formatTime(attempt.time_taken) : 'No time recorded'} • {Object.values(attempt.rubric_checklist).filter(Boolean).length}/4 criteria
                             </p>
                           </div>
-                          <div className="text-xs text-muted-foreground">
-                            {Object.values(attempt.rubric_checklist).filter(Boolean).length}/4 criteria
-                          </div>
-                        </div>
+                          <Badge variant="outline">View</Badge>
+                        </button>
                       ))}
                     </div>
                   </CardContent>

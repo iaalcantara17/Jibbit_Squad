@@ -133,14 +133,29 @@ All colors MUST be HSL.
 @layer base {
   * {
     @apply border-border;
+    min-width: 0;
   }
 
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
   }
   
   /* Interactive Elements */
   .hover-scale {
     @apply transition-transform duration-200 hover:scale-105;
+  }
+
+  /* Ensure proper text wrapping */
+  .break-words {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+  }
+
+  /* Container responsive max widths */
+  .container {
+    width: 100%;
+    max-width: 100%;
   }
 }

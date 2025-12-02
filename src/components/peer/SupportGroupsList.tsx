@@ -31,10 +31,20 @@ export const SupportGroupsList = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('support_groups')
-        .select('*, support_group_members(count)')
-        .order('created_at', { ascending: false });
+        .select('*')
+        .order('created_at', { ascending: false});
       if (error) throw error;
-      return data;
+      
+      // Get member counts separately
+      const groupsWithCounts = await Promise.all((data || []).map(async (group) => {
+        const { count } = await supabase
+          .from('support_group_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('group_id', group.id);
+        return { ...group, member_count: count || 0 };
+      }));
+      
+      return groupsWithCounts;
     },
   });
 
@@ -86,6 +96,19 @@ export const SupportGroupsList = () => {
     mutationFn: async (groupId: string) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
+
+      // Check if already a member
+      const { data: existing } = await supabase
+        .from('support_group_members')
+        .select('id')
+        .eq('group_id', groupId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existing) {
+        toast.info('You are already a member of this group');
+        return;
+      }
 
       const { error } = await supabase.from('support_group_members').insert({
         group_id: groupId,

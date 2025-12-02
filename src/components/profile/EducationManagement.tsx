@@ -163,6 +163,13 @@ export const EducationManagement = () => {
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '';
+    // Handle YYYY-MM format from month input
+    if (dateStr.match(/^\d{4}-\d{2}$/)) {
+      const [year, month] = dateStr.split('-');
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return `${monthNames[parseInt(month) - 1]} ${year}`;
+    }
+    // Fallback for other formats
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
   };

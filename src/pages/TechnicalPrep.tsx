@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { Code2, Search, Filter, Clock, CheckCircle2, Loader2 } from 'lucide-react';
+import { Code2, Search, Filter, Clock, CheckCircle2, Loader2, Info, Plus } from 'lucide-react';
+import { AddChallengeDialog } from '@/components/interviews/AddChallengeDialog';
 
 interface Challenge {
   id: string;
@@ -29,6 +30,7 @@ export default function TechnicalPrep() {
   const [difficultyFilter, setDifficultyFilter] = useState('all');
   const [userTechStack, setUserTechStack] = useState<string[]>([]);
   const [attemptCounts, setAttemptCounts] = useState<Record<string, number>>({});
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
   useEffect(() => {
     loadChallenges();
@@ -151,28 +153,46 @@ export default function TechnicalPrep() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navigation />
-      <div className="flex-1 container py-8">
-        <div className="max-w-6xl mx-auto space-y-6">
+      <div className="flex-1 container py-8 max-w-7xl mx-auto px-4">
+        <div className="space-y-6">
           {/* Header */}
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-primary/10 p-3">
-              <Code2 className="h-6 w-6 text-primary" />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-primary/10 p-3">
+                <Code2 className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-display font-bold">Technical Prep</h1>
+                <p className="text-muted-foreground mt-1">
+                  Practice coding challenges and track your solutions
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-4xl font-display font-bold">Technical Prep</h1>
-              <p className="text-muted-foreground mt-1">
-                Practice coding challenges and track your solutions
-              </p>
-            </div>
+            <Button onClick={() => setShowAddDialog(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Challenge
+            </Button>
           </div>
 
           {/* Important Notice */}
           <Card className="border-yellow-500/20 bg-yellow-500/5">
-            <CardContent className="pt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Info className="h-5 w-5" />
+                How Technical Prep Works
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                <strong>Note:</strong> This is a practice environment for writing and organizing solutions. 
-                Code is not executed or automatically graded. Use the rubric checklist to self-evaluate your solutions.
+                This is a practice environment for organizing and tracking your coding challenge solutions.
               </p>
+              <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-4">
+                <li>Challenges are curated based on common interview patterns</li>
+                <li>Questions are recommended based on your job applications and tech stack</li>
+                <li>Write and store your solutions for future reference</li>
+                <li>Use the rubric checklist to self-evaluate your approach</li>
+                <li><strong>Note:</strong> Code is not executed or automatically graded</li>
+              </ul>
             </CardContent>
           </Card>
 
@@ -183,7 +203,7 @@ export default function TechnicalPrep() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-1">
+                <div className="relative flex-1 min-w-0">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search challenges..."
@@ -256,7 +276,7 @@ export default function TechnicalPrep() {
                   <CardHeader>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <CardTitle className="text-lg mb-2 truncate">
+                        <CardTitle className="text-lg mb-2 break-words">
                           {challenge.title}
                         </CardTitle>
                         <div className="flex flex-wrap gap-2">
@@ -298,6 +318,12 @@ export default function TechnicalPrep() {
           )}
         </div>
       </div>
+
+      <AddChallengeDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        onSuccess={loadChallenges}
+      />
     </div>
   );
 }

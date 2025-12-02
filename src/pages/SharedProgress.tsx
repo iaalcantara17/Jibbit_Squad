@@ -4,21 +4,24 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Target, TrendingUp, Calendar, Award, Heart } from 'lucide-react';
+import { Target, TrendingUp, Calendar, Award, Heart, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import logo from '@/assets/logo.png';
+import { useEffect } from 'react';
 
 const SharedProgress = () => {
   const { token } = useParams<{ token: string }>();
 
   // Log access
-  useMutation({
+  const logAccessMutation = useMutation({
     mutationFn: async () => {
+      if (!token) return;
+      
       const { data: share } = await supabase
         .from('progress_shares')
         .select('id')
         .eq('share_token', token)
-        .single();
+        .maybeSingle();
 
       if (share) {
         await supabase.from('progress_share_access_log').insert({
@@ -31,19 +34,34 @@ const SharedProgress = () => {
           .eq('id', share.id);
       }
     },
-  }).mutate();
+  });
 
-  const { data: shareData, isLoading } = useQuery({
+  // Trigger logging on mount
+  useEffect(() => {
+    logAccessMutation.mutate();
+  }, [token]);
+
+  const { data: shareData, isLoading, error } = useQuery({
     queryKey: ['shared-progress', token],
+    enabled: !!token,
     queryFn: async () => {
+      if (!token) throw new Error('No token provided');
+
       const { data: share, error: shareError } = await supabase
         .from('progress_shares')
         .select('*')
         .eq('share_token', token)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
-      if (shareError || !share) throw new Error('Invalid or expired share link');
+      if (shareError) {
+        console.error('Share lookup error:', shareError);
+        throw new Error('Failed to load share link');
+      }
+
+      if (!share) {
+        throw new Error('Invalid or inactive share link');
+      }
 
       // Check expiry
       if (share.expires_at && new Date(share.expires_at) < new Date()) {
@@ -54,7 +72,7 @@ const SharedProgress = () => {
 
       // Fetch data based on scope
       const [profileRes, goalsRes, jobsRes] = await Promise.all([
-        supabase.from('profiles').select('name').eq('user_id', userId).single(),
+        supabase.from('profiles').select('name').eq('user_id', userId).maybeSingle(),
         supabase.from('goals').select('*').eq('user_id', userId),
         share.scope === 'full_progress'
           ? supabase.from('jobs').select('*').eq('user_id', userId)
@@ -72,19 +90,19 @@ const SharedProgress = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  if (!shareData) {
+  if (error || !shareData) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <Card className="p-8 max-w-md text-center">
           <h1 className="text-2xl font-bold mb-2">Link Not Found</h1>
           <p className="text-muted-foreground">
-            This progress share link is invalid or has expired.
+            {error instanceof Error ? error.message : 'This progress share link is invalid or has expired.'}
           </p>
         </Card>
       </div>
@@ -109,20 +127,20 @@ const SharedProgress = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b">
-        <div className="container py-6">
+        <div className="container py-6 max-w-6xl mx-auto px-4">
           <div className="flex items-center justify-between">
             <img src={logo} alt="JibbitATS" className="h-8 w-auto" />
-            <Badge variant="outline">{scope.replace('_', ' ')}</Badge>
+            <Badge variant="outline" className="break-words">{scope.replace('_', ' ')}</Badge>
           </div>
         </div>
       </div>
 
-      <div className="container py-8 max-w-4xl">
+      <div className="container py-8 max-w-4xl mx-auto px-4">
         <div className="space-y-6">
           {/* Header */}
           <div className="text-center">
-            <h1 className="text-4xl font-display font-bold">
-              {profile?.name}'s Progress
+            <h1 className="text-4xl font-display font-bold break-words">
+              {profile?.name || 'User'}'s Progress
             </h1>
             <p className="text-muted-foreground mt-2">
               Shared with you on {format(new Date(share.created_at), 'MMMM d, yyyy')}
@@ -132,7 +150,7 @@ const SharedProgress = () => {
           {/* Encouragement */}
           <Card className="p-6 bg-primary/5 border-primary/20">
             <div className="flex items-center gap-3">
-              <Heart className="h-6 w-6 text-primary" />
+              <Heart className="h-6 w-6 text-primary flex-shrink-0" />
               <div>
                 <h3 className="font-semibold">Keep Going!</h3>
                 <p className="text-sm text-muted-foreground">
@@ -144,10 +162,10 @@ const SharedProgress = () => {
 
           {/* KPI Summary - Available to all scopes */}
           {(scope === 'kpi_summary' || scope === 'full_progress') && (
-            <div className="grid md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card className="p-4">
                 <div className="flex items-center gap-3">
-                  <Target className="h-8 w-8 text-primary" />
+                  <Target className="h-8 w-8 text-primary flex-shrink-0" />
                   <div>
                     <p className="text-2xl font-bold">{appliedJobs}</p>
                     <p className="text-sm text-muted-foreground">Applied</p>
@@ -156,7 +174,7 @@ const SharedProgress = () => {
               </Card>
               <Card className="p-4">
                 <div className="flex items-center gap-3">
-                  <Calendar className="h-8 w-8 text-blue-500" />
+                  <Calendar className="h-8 w-8 text-blue-500 flex-shrink-0" />
                   <div>
                     <p className="text-2xl font-bold">{interviewJobs}</p>
                     <p className="text-sm text-muted-foreground">Interviews</p>
@@ -165,7 +183,7 @@ const SharedProgress = () => {
               </Card>
               <Card className="p-4">
                 <div className="flex items-center gap-3">
-                  <Award className="h-8 w-8 text-green-500" />
+                  <Award className="h-8 w-8 text-green-500 flex-shrink-0" />
                   <div>
                     <p className="text-2xl font-bold">{offerJobs}</p>
                     <p className="text-sm text-muted-foreground">Offers</p>
@@ -174,7 +192,7 @@ const SharedProgress = () => {
               </Card>
               <Card className="p-4">
                 <div className="flex items-center gap-3">
-                  <TrendingUp className="h-8 w-8 text-purple-500" />
+                  <TrendingUp className="h-8 w-8 text-purple-500 flex-shrink-0" />
                   <div>
                     <p className="text-2xl font-bold">{completedGoals}</p>
                     <p className="text-sm text-muted-foreground">Goals Done</p>
@@ -196,10 +214,10 @@ const SharedProgress = () => {
                 ) : (
                   goals.map((goal: any) => (
                     <div key={goal.id} className="space-y-2">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-medium">{goal.title}</h4>
-                          <p className="text-sm text-muted-foreground">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium break-words">{goal.title}</h4>
+                          <p className="text-sm text-muted-foreground break-words">
                             {goal.description}
                           </p>
                         </div>
@@ -211,6 +229,7 @@ const SharedProgress = () => {
                               ? 'secondary'
                               : 'outline'
                           }
+                          className="shrink-0"
                         >
                           {goal.status}
                         </Badge>
@@ -242,12 +261,12 @@ const SharedProgress = () => {
                   </p>
                 ) : (
                   jobs.map((job: any) => (
-                    <div key={job.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <h4 className="font-medium">{job.job_title}</h4>
-                        <p className="text-sm text-muted-foreground">{job.company_name}</p>
+                    <div key={job.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 border rounded-lg">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-medium break-words">{job.job_title}</h4>
+                        <p className="text-sm text-muted-foreground break-words">{job.company_name}</p>
                       </div>
-                      <Badge variant="outline">{job.status}</Badge>
+                      <Badge variant="outline" className="shrink-0">{job.status}</Badge>
                     </div>
                   ))
                 )}

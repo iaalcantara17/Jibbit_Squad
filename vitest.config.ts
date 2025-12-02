@@ -29,6 +29,88 @@ export default defineConfig({
         'src/App.tsx',
         'src/integrations/**',
       ],
+      thresholds: {
+        // Global baseline for legacy code
+        global: {
+          statements: 55,
+          branches: 55,
+          functions: 55,
+          lines: 55,
+        },
+        // Sprint 3 paths - enforce 90% coverage (85% branches)
+        'src/components/peer/**': {
+          statements: 90,
+          branches: 85,
+          functions: 90,
+          lines: 90,
+        },
+        'src/components/institutional/**': {
+          statements: 90,
+          branches: 85,
+          functions: 90,
+          lines: 90,
+        },
+        'src/components/advisor/**': {
+          statements: 90,
+          branches: 85,
+          functions: 90,
+          lines: 90,
+        },
+        'src/components/family/**': {
+          statements: 90,
+          branches: 85,
+          functions: 90,
+          lines: 90,
+        },
+        'src/components/interviews/**': {
+          statements: 90,
+          branches: 85,
+          functions: 90,
+          lines: 90,
+        },
+        'src/components/network/**': {
+          statements: 90,
+          branches: 85,
+          functions: 90,
+          lines: 90,
+        },
+        'src/components/analytics/**': {
+          statements: 90,
+          branches: 85,
+          functions: 90,
+          lines: 90,
+        },
+        'src/components/automation/**': {
+          statements: 90,
+          branches: 85,
+          functions: 90,
+          lines: 90,
+        },
+        'src/components/mentor/**': {
+          statements: 90,
+          branches: 85,
+          functions: 90,
+          lines: 90,
+        },
+        'src/components/teams/**': {
+          statements: 90,
+          branches: 85,
+          functions: 90,
+          lines: 90,
+        },
+        'src/components/documents/**': {
+          statements: 90,
+          branches: 85,
+          functions: 90,
+          lines: 90,
+        },
+        'src/components/progress/**': {
+          statements: 90,
+          branches: 85,
+          functions: 90,
+          lines: 90,
+        },
+      },
     },
   },
 });
