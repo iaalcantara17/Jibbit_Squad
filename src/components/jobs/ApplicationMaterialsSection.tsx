@@ -90,12 +90,12 @@ export const ApplicationMaterialsSection = ({
       <CardContent className="space-y-4">
         <div>
           <label className="text-sm font-medium mb-2 block">Resume</label>
-          <Select value={selectedResumeId} onValueChange={setSelectedResumeId}>
+          <Select value={selectedResumeId || "none"} onValueChange={(v) => setSelectedResumeId(v === "none" ? "" : v)}>
             <SelectTrigger>
               <SelectValue placeholder="Select a resume" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">None</SelectItem>
+              <SelectItem value="none">None</SelectItem>
               {resumes.map((resume) => (
                 <SelectItem key={resume.id} value={resume.id}>
                   {resume.title}
@@ -107,12 +107,12 @@ export const ApplicationMaterialsSection = ({
 
         <div>
           <label className="text-sm font-medium mb-2 block">Cover Letter</label>
-          <Select value={selectedCoverLetterId} onValueChange={setSelectedCoverLetterId}>
+          <Select value={selectedCoverLetterId || "none"} onValueChange={(v) => setSelectedCoverLetterId(v === "none" ? "" : v)}>
             <SelectTrigger>
               <SelectValue placeholder="Select a cover letter" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">None</SelectItem>
+              <SelectItem value="none">None</SelectItem>
               {coverLetters.map((letter) => (
                 <SelectItem key={letter.id} value={letter.id}>
                   {letter.title}

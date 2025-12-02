@@ -1,16 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Navigation } from '@/components/Navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowRight, CheckCircle, Clock, Loader2, AlertCircle } from 'lucide-react';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ArrowRight, CheckCircle, Clock, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import React from 'react';
 
 interface Question {
   id: string;
@@ -20,19 +20,74 @@ interface Question {
   star_framework_hint?: string;
 }
 
-interface Response {
-  question_id: string;
-  question_order: number;
-  is_followup: boolean;
-  followup_rationale?: string;
-  response_text?: string;
-  time_taken?: number;
-  started_at: string;
+// Error Boundary specifically for this page
+class MockInterviewErrorBoundary extends React.Component<
+  { children: React.ReactNode; onReset: () => void },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode; onReset: () => void }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('MockInterview Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex flex-col">
+          <Navigation />
+          <div className="flex-1 flex items-center justify-center p-4">
+            <Card className="max-w-md w-full">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-destructive" />
+                  <CardTitle>Something went wrong</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  {this.state.error?.message || 'An unexpected error occurred'}
+                </p>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => window.location.href = '/interview-prep'} 
+                    className="flex-1"
+                  >
+                    Back to Interview Prep
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      this.setState({ hasError: false, error: null });
+                      this.props.onReset();
+                    }} 
+                    className="flex-1"
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Retry
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
 }
 
-export default function MockInterviewSession() {
-  const { sessionId } = useParams();
-  const { user } = useAuth();
+function MockInterviewContent() {
+  const { sessionId } = useParams<{ sessionId: string }>();
+  const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -40,24 +95,28 @@ export default function MockInterviewSession() {
   const [session, setSession] = useState<any>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [responses, setResponses] = useState<Response[]>([]);
   const [currentResponse, setCurrentResponse] = useState('');
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadSession();
-  }, [sessionId, user]);
-
-  const loadSession = async () => {
-    if (!user || !sessionId) {
-      setError('Missing user or session information');
+  const loadSession = useCallback(async () => {
+    if (!sessionId) {
+      setError('No session ID provided');
       setLoading(false);
       return;
     }
 
+    if (!user) {
+      // Wait for auth to complete
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
     try {
+      // Load session
       const { data: sessionData, error: sessionError } = await supabase
         .from('mock_interview_sessions')
         .select('*')
@@ -65,17 +124,20 @@ export default function MockInterviewSession() {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (sessionError) throw sessionError;
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        throw new Error('Failed to load session');
+      }
       
       if (!sessionData) {
-        setError('Session not found or you do not have permission to access it');
+        setError('Session not found. It may have been deleted or you may not have permission to access it.');
         setLoading(false);
         return;
       }
       
       setSession(sessionData);
 
-      // Load existing responses
+      // Load existing responses to determine where user left off
       const { data: existingResponses } = await supabase
         .from('mock_interview_responses')
         .select('*')
@@ -83,61 +145,70 @@ export default function MockInterviewSession() {
         .order('question_order');
 
       if (existingResponses && existingResponses.length > 0) {
-        setResponses(existingResponses as Response[]);
         setCurrentQuestionIndex(existingResponses.length);
       }
 
-      // Load questions from question bank based on format
-      const { data: questionData, error: questionError } = await supabase
+      // Load questions - try multiple strategies
+      let loadedQuestions: Question[] = [];
+
+      // Strategy 1: Match category and role
+      const { data: exactMatch } = await supabase
         .from('question_bank_items')
-        .select('*')
-        .eq('category', sessionData.format)
+        .select('id, question_text, category, difficulty, star_framework_hint')
+        .eq('category', sessionData.format || 'behavioral')
         .eq('role_title', sessionData.target_role)
-        .limit(sessionData.question_count);
+        .limit(sessionData.question_count || 10);
 
-      if (questionError) {
-        console.error('Error loading questions:', questionError);
+      if (exactMatch && exactMatch.length > 0) {
+        loadedQuestions = exactMatch;
       }
 
-      // If we don't have enough questions for exact role, get general questions
-      if (!questionData || questionData.length < sessionData.question_count) {
-        const { data: fallbackQuestions } = await supabase
+      // Strategy 2: Just match category
+      if (loadedQuestions.length === 0) {
+        const { data: categoryMatch } = await supabase
           .from('question_bank_items')
-          .select('*')
-          .eq('category', sessionData.format)
-          .limit(sessionData.question_count);
+          .select('id, question_text, category, difficulty, star_framework_hint')
+          .eq('category', sessionData.format || 'behavioral')
+          .limit(sessionData.question_count || 10);
 
-        if (fallbackQuestions && fallbackQuestions.length > 0) {
-          setQuestions(fallbackQuestions as Question[]);
-        } else {
-          // Last resort: get any questions
-          const { data: anyQuestions } = await supabase
-            .from('question_bank_items')
-            .select('*')
-            .limit(sessionData.question_count);
-          
-          if (!anyQuestions || anyQuestions.length === 0) {
-            setError('No questions available. Please add questions to the question bank first.');
-            setLoading(false);
-            return;
-          }
-          setQuestions(anyQuestions as Question[]);
+        if (categoryMatch && categoryMatch.length > 0) {
+          loadedQuestions = categoryMatch;
         }
-      } else {
-        setQuestions(questionData as Question[]);
       }
-    } catch (error) {
-      console.error('Error loading session:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load mock interview session',
-        variant: 'destructive',
-      });
-      navigate('/interview-prep');
+
+      // Strategy 3: Get any questions
+      if (loadedQuestions.length === 0) {
+        const { data: anyQuestions } = await supabase
+          .from('question_bank_items')
+          .select('id, question_text, category, difficulty, star_framework_hint')
+          .limit(sessionData.question_count || 10);
+
+        if (anyQuestions && anyQuestions.length > 0) {
+          loadedQuestions = anyQuestions;
+        }
+      }
+
+      if (loadedQuestions.length === 0) {
+        setError('No questions available in the question bank. Please add some questions first.');
+        setLoading(false);
+        return;
+      }
+
+      setQuestions(loadedQuestions);
+      setQuestionStartTime(Date.now());
+    } catch (err) {
+      console.error('Error loading session:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load interview session');
     } finally {
       setLoading(false);
     }
-  };
+  }, [sessionId, user]);
+
+  useEffect(() => {
+    if (!authLoading) {
+      loadSession();
+    }
+  }, [authLoading, loadSession]);
 
   const handleNext = async () => {
     if (!currentResponse.trim()) {
@@ -149,37 +220,43 @@ export default function MockInterviewSession() {
       return;
     }
 
+    if (!questions[currentQuestionIndex]) {
+      toast({
+        title: 'Error',
+        description: 'Question not found',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setSaving(true);
 
     try {
       const timeTaken = Math.floor((Date.now() - questionStartTime) / 1000);
       const currentQuestion = questions[currentQuestionIndex];
 
-      const newResponse: Response = {
-        question_id: currentQuestion.id,
-        question_order: currentQuestionIndex,
-        is_followup: false,
-        response_text: currentResponse,
-        time_taken: timeTaken,
-        started_at: new Date(questionStartTime).toISOString(),
-      };
-
-      const { error } = await supabase
+      // Save response
+      const { error: insertError } = await supabase
         .from('mock_interview_responses')
         .insert({
           session_id: sessionId,
-          ...newResponse,
+          question_id: currentQuestion.id,
+          question_order: currentQuestionIndex,
+          is_followup: false,
+          response_text: currentResponse,
+          time_taken: timeTaken,
+          started_at: new Date(questionStartTime).toISOString(),
           answered_at: new Date().toISOString(),
         });
 
-      if (error) throw error;
+      if (insertError) throw insertError;
 
-      setResponses([...responses, newResponse]);
       setCurrentResponse('');
       setQuestionStartTime(Date.now());
 
-      if (currentQuestionIndex < questions.length - 1) {
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
+      const nextIndex = currentQuestionIndex + 1;
+      if (nextIndex < questions.length) {
+        setCurrentQuestionIndex(nextIndex);
       } else {
         // Complete the session
         await supabase
@@ -190,13 +267,18 @@ export default function MockInterviewSession() {
           })
           .eq('id', sessionId);
 
+        toast({
+          title: 'Interview Complete!',
+          description: 'View your summary and feedback',
+        });
+
         navigate(`/mock-interview/${sessionId}/summary`);
       }
-    } catch (error) {
-      console.error('Error saving response:', error);
+    } catch (err) {
+      console.error('Error saving response:', err);
       toast({
         title: 'Error',
-        description: 'Failed to save your response',
+        description: 'Failed to save your response. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -204,17 +286,22 @@ export default function MockInterviewSession() {
     }
   };
 
-  if (loading) {
+  // Show loading while auth is loading or data is loading
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navigation />
         <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <div className="text-center space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+            <p className="text-muted-foreground">Loading interview...</p>
+          </div>
         </div>
       </div>
     );
   }
 
+  // Show error state
   if (error) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -233,7 +320,8 @@ export default function MockInterviewSession() {
                 <Button onClick={() => navigate('/interview-prep')} className="flex-1">
                   Back to Interview Prep
                 </Button>
-                <Button variant="outline" onClick={() => window.location.reload()} className="flex-1">
+                <Button variant="outline" onClick={() => loadSession()} className="flex-1">
+                  <RefreshCw className="mr-2 h-4 w-4" />
                   Retry
                 </Button>
               </div>
@@ -244,6 +332,7 @@ export default function MockInterviewSession() {
     );
   }
 
+  // Show no questions state
   if (!session || questions.length === 0) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -255,11 +344,16 @@ export default function MockInterviewSession() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                There are no questions available for this interview session. Please add questions to the question bank first.
+                There are no questions available. Please add questions to the question bank first.
               </p>
-              <Button onClick={() => navigate('/question-bank')} className="w-full">
-                Go to Question Bank
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={() => navigate('/question-bank')} className="flex-1">
+                  Go to Question Bank
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/interview-prep')} className="flex-1">
+                  Back
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -267,26 +361,27 @@ export default function MockInterviewSession() {
     );
   }
 
-  const currentQuestion = questions[currentQuestionIndex];
+  // Safely get current question
+  const currentQuestion = questions[Math.min(currentQuestionIndex, questions.length - 1)];
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+  const isLastQuestion = currentQuestionIndex >= questions.length - 1;
 
   return (
-    <ErrorBoundary>
-      <div className="min-h-screen flex flex-col">
-        <Navigation />
-        <div className="flex-1 container py-8 px-4">
+    <div className="min-h-screen flex flex-col">
+      <Navigation />
+      <div className="flex-1 container py-8 px-4">
         <div className="max-w-3xl mx-auto space-y-6">
           {/* Header */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <div>
-                <h1 className="text-3xl font-display font-bold">Mock Interview</h1>
+                <h1 className="text-2xl md:text-3xl font-display font-bold">Mock Interview</h1>
                 <p className="text-muted-foreground">
-                  {session.target_role} {session.company_name && `at ${session.company_name}`}
+                  {session?.target_role || 'Interview'} {session?.company_name && `at ${session.company_name}`}
                 </p>
               </div>
               <Badge variant="secondary" className="capitalize">
-                {session.format}
+                {session?.format || 'behavioral'}
               </Badge>
             </div>
             <div className="space-y-2">
@@ -305,21 +400,23 @@ export default function MockInterviewSession() {
             <CardHeader>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
-                  <CardTitle className="text-xl mb-2">{currentQuestion.question_text}</CardTitle>
-                  <div className="flex gap-2">
+                  <CardTitle className="text-lg md:text-xl mb-2">
+                    {currentQuestion?.question_text || 'Question unavailable'}
+                  </CardTitle>
+                  <div className="flex gap-2 flex-wrap">
                     <Badge variant="outline" className="capitalize">
-                      {currentQuestion.category}
+                      {currentQuestion?.category || 'general'}
                     </Badge>
                     <Badge variant="secondary" className="capitalize">
-                      {currentQuestion.difficulty}
+                      {currentQuestion?.difficulty || 'medium'}
                     </Badge>
                   </div>
                 </div>
-                <Clock className="h-5 w-5 text-muted-foreground" />
+                <Clock className="h-5 w-5 text-muted-foreground flex-shrink-0" />
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {currentQuestion.star_framework_hint && (
+              {currentQuestion?.star_framework_hint && (
                 <div className="p-4 rounded-lg bg-muted">
                   <p className="text-sm font-medium mb-1">💡 STAR Framework Tip:</p>
                   <p className="text-sm text-muted-foreground">
@@ -334,32 +431,36 @@ export default function MockInterviewSession() {
                   value={currentResponse}
                   onChange={(e) => setCurrentResponse(e.target.value)}
                   placeholder="Type your answer here. Be specific and use examples..."
-                  className="min-h-[250px]"
+                  className="min-h-[200px] md:min-h-[250px]"
                 />
                 <p className="text-xs text-muted-foreground">
                   {currentResponse.length} characters
                 </p>
               </div>
 
-              <div className="flex justify-between items-center pt-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-4">
                 <p className="text-sm text-muted-foreground">
-                  Take your time. There's no timer for this mock interview.
+                  Take your time. There's no timer.
                 </p>
-                <Button onClick={handleNext} disabled={saving || !currentResponse.trim()}>
+                <Button 
+                  onClick={handleNext} 
+                  disabled={saving || !currentResponse.trim()}
+                  className="w-full sm:w-auto"
+                >
                   {saving ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Saving...
                     </>
-                  ) : currentQuestionIndex < questions.length - 1 ? (
-                    <>
-                      Next Question
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </>
-                  ) : (
+                  ) : isLastQuestion ? (
                     <>
                       Finish Interview
                       <CheckCircle className="ml-2 h-4 w-4" />
+                    </>
+                  ) : (
+                    <>
+                      Next Question
+                      <ArrowRight className="ml-2 h-4 w-4" />
                     </>
                   )}
                 </Button>
@@ -368,11 +469,11 @@ export default function MockInterviewSession() {
           </Card>
 
           {/* Progress indicator */}
-          <div className="flex gap-1 justify-center">
+          <div className="flex gap-1 justify-center flex-wrap">
             {questions.map((_, idx) => (
               <div
                 key={idx}
-                className={`h-2 w-8 rounded-full transition-colors ${
+                className={`h-2 w-6 md:w-8 rounded-full transition-colors ${
                   idx < currentQuestionIndex
                     ? 'bg-primary'
                     : idx === currentQuestionIndex
@@ -385,6 +486,15 @@ export default function MockInterviewSession() {
         </div>
       </div>
     </div>
-    </ErrorBoundary>
+  );
+}
+
+export default function MockInterviewSession() {
+  const [resetKey, setResetKey] = useState(0);
+  
+  return (
+    <MockInterviewErrorBoundary onReset={() => setResetKey(k => k + 1)}>
+      <MockInterviewContent key={resetKey} />
+    </MockInterviewErrorBoundary>
   );
 }

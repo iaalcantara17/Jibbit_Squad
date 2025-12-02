@@ -144,7 +144,7 @@ export default function Analytics() {
   filteredJobs = filterJobsByIndustry(filteredJobs, industry);
 
   const statusCounts = filteredJobs.reduce((acc, job) => {
-    const normalizedStatus = job.status.toLowerCase().replace(/\s+/g, '_');
+    const normalizedStatus = (job.status || 'unknown').toLowerCase().replace(/\s+/g, '_');
     acc[normalizedStatus] = (acc[normalizedStatus] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);

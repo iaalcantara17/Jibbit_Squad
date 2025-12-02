@@ -116,12 +116,12 @@ export function AnalyticsFilters({
           {companies.length > 0 && (
             <div className="space-y-2">
               <Label>Company</Label>
-              <Select value={company || ""} onValueChange={(v) => onCompanyChange(v || null)}>
+              <Select value={company || "all"} onValueChange={(v) => onCompanyChange(v === "all" ? null : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All companies" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All companies</SelectItem>
+                  <SelectItem value="all">All companies</SelectItem>
                   {companies.map((c) => (
                     <SelectItem key={c} value={c}>
                       {c}
@@ -136,12 +136,12 @@ export function AnalyticsFilters({
           {roles.length > 0 && (
             <div className="space-y-2">
               <Label>Role</Label>
-              <Select value={role || ""} onValueChange={(v) => onRoleChange(v || null)}>
+              <Select value={role || "all"} onValueChange={(v) => onRoleChange(v === "all" ? null : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All roles" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All roles</SelectItem>
+                  <SelectItem value="all">All roles</SelectItem>
                   {roles.map((r) => (
                     <SelectItem key={r} value={r}>
                       {r}
@@ -156,12 +156,12 @@ export function AnalyticsFilters({
           {industries.length > 0 && (
             <div className="space-y-2">
               <Label>Industry</Label>
-              <Select value={industry || ""} onValueChange={(v) => onIndustryChange(v || null)}>
+              <Select value={industry || "all"} onValueChange={(v) => onIndustryChange(v === "all" ? null : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All industries" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All industries</SelectItem>
+                  <SelectItem value="all">All industries</SelectItem>
                   {industries.map((i) => (
                     <SelectItem key={i} value={i}>
                       {i}

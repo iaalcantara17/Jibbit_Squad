@@ -141,12 +141,12 @@ export function MockInterviewSetup({ open, onOpenChange }: MockInterviewSetupPro
 
           <div className="space-y-2">
             <Label htmlFor="job">Company (Optional)</Label>
-            <Select value={selectedJob} onValueChange={setSelectedJob}>
+            <Select value={selectedJob} onValueChange={(val) => setSelectedJob(val === 'none' ? '' : val)}>
               <SelectTrigger id="job">
                 <SelectValue placeholder="Select a job application" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="none">None</SelectItem>
                 {jobs.map((job) => (
                   <SelectItem key={job.id} value={job.id}>
                     {job.job_title} - {job.company_name}

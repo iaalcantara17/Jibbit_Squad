@@ -205,7 +205,7 @@ export function JobAnalyticsDashboard() {
                   job.status === 'interview' ? 'secondary' :
                   'outline'
                 }>
-                  {job.status.replace('_', ' ')}
+                  {(job.status || 'unknown').replace('_', ' ')}
                 </Badge>
               </div>
             ))}

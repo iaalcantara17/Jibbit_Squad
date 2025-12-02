@@ -145,20 +145,47 @@ export default function MockInterviewSummary() {
 
       if (error) throw error;
 
-      // Reload summary with AI content
-      await loadSummary();
-
-      toast({
-        title: 'AI summary generated',
-        description: 'Your personalized feedback is ready',
-      });
+      // Use the returned AI summary directly to update state
+      if (data?.summary) {
+        setSummary((prev: any) => ({
+          ...prev,
+          ai_summary: data.summary,
+        }));
+        
+        toast({
+          title: 'AI Summary Generated',
+          description: 'Your personalized feedback is now visible below',
+        });
+      } else {
+        // Fallback: Reload summary from database
+        const { data: updatedSummary } = await supabase
+          .from('mock_interview_summaries')
+          .select('*')
+          .eq('session_id', sessionId)
+          .single();
+        
+        if (updatedSummary) {
+          setSummary(updatedSummary);
+        }
+        
+        toast({
+          title: 'AI Summary Generated',
+          description: 'Your personalized feedback is ready',
+        });
+      }
     } catch (error: any) {
       console.error('Error generating AI summary:', error);
       
-      if (error.message?.includes('Rate limits exceeded')) {
+      if (error.message?.includes('Rate limits exceeded') || error.message?.includes('429')) {
         toast({
           title: 'Rate limit reached',
           description: 'Please try again in a few moments',
+          variant: 'destructive',
+        });
+      } else if (error.message?.includes('402') || error.message?.includes('Payment')) {
+        toast({
+          title: 'Usage limit reached',
+          description: 'Please add credits to continue using AI features',
           variant: 'destructive',
         });
       } else {

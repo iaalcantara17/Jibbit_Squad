@@ -421,14 +421,14 @@ export const ReferencesManager = () => {
             <div className="space-y-2">
               <Label>Job Application (optional)</Label>
               <Select
-                value={usageData.job_id}
-                onValueChange={(value) => setUsageData({ ...usageData, job_id: value })}
+                value={usageData.job_id || "none"}
+                onValueChange={(value) => setUsageData({ ...usageData, job_id: value === "none" ? "" : value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select job or leave blank" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {jobs.map((job) => (
                     <SelectItem key={job.id} value={job.id}>
                       {job.job_title} - {job.company_name}
