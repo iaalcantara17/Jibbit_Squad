@@ -11,8 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Users, Lock, Globe } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { SupportGroupDetail } from './SupportGroupDetail';
 
 export const SupportGroupsList = () => {
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newGroup, setNewGroup] = useState({
     name: '',
@@ -32,10 +34,9 @@ export const SupportGroupsList = () => {
       const { data, error } = await supabase
         .from('support_groups')
         .select('*')
-        .order('created_at', { ascending: false});
+        .order('created_at', { ascending: false });
       if (error) throw error;
       
-      // Get member counts separately
       const groupsWithCounts = await Promise.all((data || []).map(async (group) => {
         const { count } = await supabase
           .from('support_group_members')
@@ -64,7 +65,6 @@ export const SupportGroupsList = () => {
 
       if (error) throw error;
 
-      // Auto-join the creator
       await supabase.from('support_group_members').insert({
         group_id: group.id,
         user_id: user.id,
@@ -97,7 +97,6 @@ export const SupportGroupsList = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Check if already a member
       const { data: existing } = await supabase
         .from('support_group_members')
         .select('id')
@@ -126,6 +125,15 @@ export const SupportGroupsList = () => {
       toast.error('Failed to join group: ' + error.message);
     },
   });
+
+  if (selectedGroupId) {
+    return (
+      <SupportGroupDetail 
+        groupId={selectedGroupId} 
+        onBack={() => setSelectedGroupId(null)} 
+      />
+    );
+  }
 
   if (isLoading) {
     return <div>Loading support groups...</div>;
@@ -248,7 +256,11 @@ export const SupportGroupsList = () => {
 
       <div className="grid md:grid-cols-2 gap-4">
         {groups?.map((group) => (
-          <Card key={group.id}>
+          <Card 
+            key={group.id} 
+            className="cursor-pointer hover:border-primary/50 transition-colors"
+            onClick={() => setSelectedGroupId(group.id)}
+          >
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -271,7 +283,13 @@ export const SupportGroupsList = () => {
                   <Users className="h-4 w-4" />
                   <span>{group.member_count} members</span>
                 </div>
-                <Button size="sm" onClick={() => joinGroupMutation.mutate(group.id)}>
+                <Button 
+                  size="sm" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    joinGroupMutation.mutate(group.id);
+                  }}
+                >
                   Join Group
                 </Button>
               </div>
