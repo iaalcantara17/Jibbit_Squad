@@ -151,6 +151,60 @@ serve(async (req) => {
       );
     }
 
+    if (action === 'update') {
+      const { eventId, event: calendarEvent } = event;
+
+      const googleEvent = {
+        summary: calendarEvent.title,
+        description: calendarEvent.description,
+        location: calendarEvent.location,
+        start: {
+          dateTime: calendarEvent.startTime,
+          timeZone: 'UTC',
+        },
+        end: {
+          dateTime: calendarEvent.endTime,
+          timeZone: 'UTC',
+        },
+        reminders: {
+          useDefault: false,
+          overrides: [
+            { method: 'email', minutes: 24 * 60 },
+            { method: 'popup', minutes: 60 },
+          ],
+        },
+      };
+
+      const response = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(googleEvent),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Google Calendar API error:', errorData);
+        throw new Error(`Failed to update calendar event: ${response.status}`);
+      }
+
+      const updatedEvent = await response.json();
+      console.log('Calendar event updated:', updatedEvent.id);
+
+      return new Response(
+        JSON.stringify({ success: true, eventId: updatedEvent.id }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     if (action === 'delete') {
       const { eventId } = event;
 

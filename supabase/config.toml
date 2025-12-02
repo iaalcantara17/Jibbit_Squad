@@ -77,3 +77,9 @@ verify_jwt = false
 
 [functions.automation-rule-upsert]
 verify_jwt = true
+
+[functions.linkedin-oauth-start]
+verify_jwt = false
+
+[functions.linkedin-oauth-callback]
+verify_jwt = false

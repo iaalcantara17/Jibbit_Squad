@@ -70,6 +70,8 @@ import DemoSprint3 from "./pages/DemoSprint3";
 import PeerCommunity from "./pages/PeerCommunity";
 import InstitutionalAdmin from "./pages/InstitutionalAdmin";
 import AdvisorMarketplace from "./pages/AdvisorMarketplace";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 
 const queryClient = new QueryClient();
  
@@ -530,6 +532,9 @@ const App = () => (
               {/* Public routes - no auth required */}
               <Route path="/r/:token" element={<PublicReviewerView />} />
               <Route path="/progress/:token" element={<SharedProgress />} />
+              {/* Legal pages - public access */}
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<TermsOfService />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

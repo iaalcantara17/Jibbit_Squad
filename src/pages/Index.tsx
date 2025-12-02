@@ -74,7 +74,15 @@ const Index = () => {
           </div>
         </div>
       </section>
-      <footer className="border-t py-8"><div className="container text-center text-sm text-muted-foreground"><p>&copy; 2025 JibbitATS. All rights reserved.</p></div></footer>
+      <footer className="border-t py-8">
+        <div className="container text-center text-sm text-muted-foreground space-y-2">
+          <p>&copy; 2025 JibbitATS. All rights reserved.</p>
+          <div className="flex justify-center gap-4">
+            <Link to="/privacy" className="hover:underline">Privacy Policy</Link>
+            <Link to="/terms" className="hover:underline">Terms of Service</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

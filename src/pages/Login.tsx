@@ -29,7 +29,7 @@ const Login = () => {
     }
   }, [user, navigate]);
 
-  const handleOAuthLogin = async (provider: 'google' | 'azure' | 'linkedin_oidc' | 'github' | 'apple') => {
+  const handleOAuthLogin = async (provider: 'google' | 'azure' | 'github' | 'apple') => {
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -48,6 +48,14 @@ const Login = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleLinkedInLogin = () => {
+    setIsLoading(true);
+    // Use custom LinkedIn OAuth flow via edge function
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const redirectTo = encodeURIComponent(window.location.origin);
+    window.location.href = `${supabaseUrl}/functions/v1/linkedin-oauth-start?redirect_to=${redirectTo}`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -113,7 +121,7 @@ const Login = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => handleOAuthLogin('linkedin_oidc')}
+                  onClick={handleLinkedInLogin}
                   disabled={isLoading}
                   className="w-full"
                 >

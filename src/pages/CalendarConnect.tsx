@@ -48,7 +48,7 @@ export default function CalendarConnect() {
         return;
       }
 
-      const scope = 'https://www.googleapis.com/auth/calendar';
+      const scope = 'https://www.googleapis.com/auth/calendar.events';
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
         `client_id=${clientId}&` +
         `redirect_uri=${encodeURIComponent(redirectUri)}&` +
