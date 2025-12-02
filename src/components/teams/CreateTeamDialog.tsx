@@ -19,28 +19,29 @@ export const CreateTeamDialog = () => {
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      // Get fresh auth session to ensure user_id matches auth.uid()
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error("Not authenticated");
 
-      // Create team
+      // Create team - using session.user.id to match auth.uid()
       const { data: team, error: teamError } = await supabase
         .from("teams")
         .insert([{
           name: formData.name,
           description: formData.description,
-          created_by: user.id,
+          created_by: session.user.id,
         }])
         .select()
         .single();
 
       if (teamError) throw teamError;
 
-      // Add creator as admin
+      // Add creator as admin - using session.user.id to match auth.uid()
       const { error: memberError } = await supabase
         .from("team_memberships")
         .insert([{
           team_id: team.id,
-          user_id: user.id,
+          user_id: session.user.id,
           role: "admin",
         }]);
 

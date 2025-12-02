@@ -273,30 +273,6 @@ export const QuestionPracticeFeedback = ({ responseId, question, onBack }: Quest
         </CardContent>
       </Card>
 
-      {/* Weak Language */}
-      {feedback.weak_language && feedback.weak_language.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Language Improvements</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {feedback.weak_language.map((item, idx) => (
-              <div key={idx} className="p-4 border rounded-lg space-y-2">
-                <div className="flex items-start gap-2">
-                  <Badge variant="destructive" className="mt-0.5">Weak</Badge>
-                  <p className="text-sm flex-1">"{item.phrase}"</p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Badge className="mt-0.5">Better</Badge>
-                  <p className="text-sm flex-1">"{item.alternative}"</p>
-                </div>
-                <p className="text-xs text-muted-foreground pl-16">{item.reason}</p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
       {/* Speaking Time */}
       <Card>
         <CardHeader>
