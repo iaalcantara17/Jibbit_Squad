@@ -86,7 +86,7 @@ export default function CareerPathSimulation() {
       } else {
         // Generate demo simulation
         const paths: CareerPath[] = [];
-        let currentSalary = formData.current_salary;
+        const currentSalary = formData.current_salary;
         const annualGrowth = 0.08;
 
         for (let year = 1; year <= timeHorizon; year++) {

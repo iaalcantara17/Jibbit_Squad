@@ -40,7 +40,7 @@ export const ResumeExportAdvanced = ({ resumeData, fileName = 'resume' }: Props)
 
   const exportHTML = () => {
     const sections = resumeData.sections || [];
-    let html = `
+    const html = `
 <!DOCTYPE html>
 <html>
 <head>
