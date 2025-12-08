@@ -50,6 +50,228 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_events: {
+        Row: {
+          country: string | null
+          created_at: string
+          device_type: string | null
+          event_category: string | null
+          event_name: string
+          event_properties: Json | null
+          id: string
+          page_url: string | null
+          referrer: string | null
+          session_id: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          device_type?: string | null
+          event_category?: string | null
+          event_name: string
+          event_properties?: Json | null
+          id?: string
+          page_url?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          device_type?: string | null
+          event_category?: string | null
+          event_name?: string
+          event_properties?: Json | null
+          id?: string
+          page_url?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      api_rate_limits: {
+        Row: {
+          api_name: string
+          average_response_ms: number | null
+          created_at: string
+          current_usage: number
+          daily_limit: number
+          id: string
+          last_error: string | null
+          last_error_at: string | null
+          reset_at: string
+          updated_at: string
+        }
+        Insert: {
+          api_name: string
+          average_response_ms?: number | null
+          created_at?: string
+          current_usage?: number
+          daily_limit: number
+          id?: string
+          last_error?: string | null
+          last_error_at?: string | null
+          reset_at?: string
+          updated_at?: string
+        }
+        Update: {
+          api_name?: string
+          average_response_ms?: number | null
+          created_at?: string
+          current_usage?: number
+          daily_limit?: number
+          id?: string
+          last_error?: string | null
+          last_error_at?: string | null
+          reset_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      api_usage_logs: {
+        Row: {
+          api_name: string
+          created_at: string
+          endpoint: string | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          request_count: number | null
+          response_status: number | null
+          response_time_ms: number | null
+          user_id: string | null
+        }
+        Insert: {
+          api_name: string
+          created_at?: string
+          endpoint?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          request_count?: number | null
+          response_status?: number | null
+          response_time_ms?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          api_name?: string
+          created_at?: string
+          endpoint?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          request_count?: number | null
+          response_status?: number | null
+          response_time_ms?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      application_ab_test_results: {
+        Row: {
+          applied_at: string
+          created_at: string
+          days_to_response: number | null
+          id: string
+          job_id: string | null
+          response_at: string | null
+          response_received: boolean | null
+          response_type: string | null
+          test_id: string | null
+          variant: string
+        }
+        Insert: {
+          applied_at?: string
+          created_at?: string
+          days_to_response?: number | null
+          id?: string
+          job_id?: string | null
+          response_at?: string | null
+          response_received?: boolean | null
+          response_type?: string | null
+          test_id?: string | null
+          variant: string
+        }
+        Update: {
+          applied_at?: string
+          created_at?: string
+          days_to_response?: number | null
+          id?: string
+          job_id?: string | null
+          response_at?: string | null
+          response_received?: boolean | null
+          response_type?: string | null
+          test_id?: string | null
+          variant?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_ab_test_results_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_ab_test_results_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "application_ab_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      application_ab_tests: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          id: string
+          is_active: boolean | null
+          started_at: string
+          test_name: string
+          updated_at: string
+          user_id: string
+          variant_a_id: string | null
+          variant_a_type: string
+          variant_b_id: string | null
+          variant_b_type: string
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          started_at?: string
+          test_name: string
+          updated_at?: string
+          user_id: string
+          variant_a_id?: string | null
+          variant_a_type: string
+          variant_b_id?: string | null
+          variant_b_type: string
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          started_at?: string
+          test_name?: string
+          updated_at?: string
+          user_id?: string
+          variant_a_id?: string | null
+          variant_a_type?: string
+          variant_b_id?: string | null
+          variant_b_type?: string
+        }
+        Relationships: []
+      }
       application_events: {
         Row: {
           event_date: string | null
@@ -81,6 +303,122 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "application_events_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      application_quality_assessments: {
+        Row: {
+          cover_letter_id: string | null
+          created_at: string
+          experience_alignment_score: number | null
+          formatting_score: number | null
+          id: string
+          improvement_suggestions: Json | null
+          job_id: string
+          keyword_match_score: number | null
+          missing_keywords: Json | null
+          overall_score: number | null
+          resume_id: string | null
+          strengths: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cover_letter_id?: string | null
+          created_at?: string
+          experience_alignment_score?: number | null
+          formatting_score?: number | null
+          id?: string
+          improvement_suggestions?: Json | null
+          job_id: string
+          keyword_match_score?: number | null
+          missing_keywords?: Json | null
+          overall_score?: number | null
+          resume_id?: string | null
+          strengths?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cover_letter_id?: string | null
+          created_at?: string
+          experience_alignment_score?: number | null
+          formatting_score?: number | null
+          id?: string
+          improvement_suggestions?: Json | null
+          job_id?: string
+          keyword_match_score?: number | null
+          missing_keywords?: Json | null
+          overall_score?: number | null
+          resume_id?: string | null
+          strengths?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      application_quality_scores: {
+        Row: {
+          consistency_score: number | null
+          cover_letter_id: string | null
+          created_at: string
+          experience_match_score: number | null
+          formatting_score: number | null
+          id: string
+          improvement_suggestions: Json | null
+          job_id: string
+          keyword_match_score: number | null
+          missing_keywords: Json | null
+          overall_score: number
+          resume_id: string | null
+          skills_alignment_score: number | null
+          strengths: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          consistency_score?: number | null
+          cover_letter_id?: string | null
+          created_at?: string
+          experience_match_score?: number | null
+          formatting_score?: number | null
+          id?: string
+          improvement_suggestions?: Json | null
+          job_id: string
+          keyword_match_score?: number | null
+          missing_keywords?: Json | null
+          overall_score?: number
+          resume_id?: string | null
+          skills_alignment_score?: number | null
+          strengths?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          consistency_score?: number | null
+          cover_letter_id?: string | null
+          created_at?: string
+          experience_match_score?: number | null
+          formatting_score?: number | null
+          id?: string
+          improvement_suggestions?: Json | null
+          job_id?: string
+          keyword_match_score?: number | null
+          missing_keywords?: Json | null
+          overall_score?: number
+          resume_id?: string | null
+          skills_alignment_score?: number | null
+          strengths?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_quality_scores_job_id_fkey"
             columns: ["job_id"]
             isOneToOne: false
             referencedRelation: "jobs"
@@ -121,6 +459,71 @@ export type Database = {
             foreignKeyName: "application_status_history_job_id_fkey"
             columns: ["job_id"]
             isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      application_timing_recommendations: {
+        Row: {
+          actual_submit_at: string | null
+          created_at: string
+          factors: Json | null
+          historical_success_rate: number | null
+          id: string
+          is_scheduled: boolean | null
+          job_id: string
+          recommendation_text: string | null
+          recommended_day: string | null
+          recommended_time_end: string | null
+          recommended_time_start: string | null
+          recommended_timezone: string | null
+          scheduled_submit_at: string | null
+          timing_score: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actual_submit_at?: string | null
+          created_at?: string
+          factors?: Json | null
+          historical_success_rate?: number | null
+          id?: string
+          is_scheduled?: boolean | null
+          job_id: string
+          recommendation_text?: string | null
+          recommended_day?: string | null
+          recommended_time_end?: string | null
+          recommended_time_start?: string | null
+          recommended_timezone?: string | null
+          scheduled_submit_at?: string | null
+          timing_score?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actual_submit_at?: string | null
+          created_at?: string
+          factors?: Json | null
+          historical_success_rate?: number | null
+          id?: string
+          is_scheduled?: boolean | null
+          job_id?: string
+          recommendation_text?: string | null
+          recommended_day?: string | null
+          recommended_time_end?: string | null
+          recommended_time_start?: string | null
+          recommended_timezone?: string | null
+          scheduled_submit_at?: string | null
+          timing_score?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_timing_recommendations_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: true
             referencedRelation: "jobs"
             referencedColumns: ["id"]
           },
@@ -342,6 +745,66 @@ export type Database = {
           },
         ]
       }
+      career_simulations: {
+        Row: {
+          assumptions: Json | null
+          created_at: string
+          id: string
+          milestone_projections: Json | null
+          paths: Json | null
+          risk_factors: Json | null
+          selected_path_index: number | null
+          simulation_name: string
+          starting_role: string
+          starting_salary: number | null
+          success_criteria: Json | null
+          success_probability: number | null
+          target_role: string | null
+          target_salary: number | null
+          time_horizon_years: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assumptions?: Json | null
+          created_at?: string
+          id?: string
+          milestone_projections?: Json | null
+          paths?: Json | null
+          risk_factors?: Json | null
+          selected_path_index?: number | null
+          simulation_name: string
+          starting_role: string
+          starting_salary?: number | null
+          success_criteria?: Json | null
+          success_probability?: number | null
+          target_role?: string | null
+          target_salary?: number | null
+          time_horizon_years?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assumptions?: Json | null
+          created_at?: string
+          id?: string
+          milestone_projections?: Json | null
+          paths?: Json | null
+          risk_factors?: Json | null
+          selected_path_index?: number | null
+          simulation_name?: string
+          starting_role?: string
+          starting_salary?: number | null
+          success_criteria?: Json | null
+          success_probability?: number | null
+          target_role?: string | null
+          target_salary?: number | null
+          time_horizon_years?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       challenge_participants: {
         Row: {
           challenge_id: string
@@ -509,6 +972,71 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      competitive_analysis: {
+        Row: {
+          advantages: Json | null
+          application_velocity: number | null
+          competitive_score: number | null
+          created_at: string
+          differentiation_strategies: Json | null
+          disadvantages: Json | null
+          estimated_applicants: number | null
+          estimated_time_to_fill: number | null
+          id: string
+          job_id: string
+          likelihood_interview: string | null
+          likelihood_percent: number | null
+          market_position: string | null
+          unique_qualifications: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          advantages?: Json | null
+          application_velocity?: number | null
+          competitive_score?: number | null
+          created_at?: string
+          differentiation_strategies?: Json | null
+          disadvantages?: Json | null
+          estimated_applicants?: number | null
+          estimated_time_to_fill?: number | null
+          id?: string
+          job_id: string
+          likelihood_interview?: string | null
+          likelihood_percent?: number | null
+          market_position?: string | null
+          unique_qualifications?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          advantages?: Json | null
+          application_velocity?: number | null
+          competitive_score?: number | null
+          created_at?: string
+          differentiation_strategies?: Json | null
+          disadvantages?: Json | null
+          estimated_applicants?: number | null
+          estimated_time_to_fill?: number | null
+          id?: string
+          job_id?: string
+          likelihood_interview?: string | null
+          likelihood_percent?: number | null
+          market_position?: string | null
+          unique_qualifications?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitive_analysis_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: true
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contact_connections: {
         Row: {
@@ -1085,6 +1613,54 @@ export type Database = {
         }
         Relationships: []
       }
+      error_logs: {
+        Row: {
+          component: string | null
+          created_at: string
+          error_message: string
+          error_stack: string | null
+          error_type: string
+          id: string
+          is_resolved: boolean | null
+          metadata: Json | null
+          resolved_at: string | null
+          severity: string | null
+          url: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          component?: string | null
+          created_at?: string
+          error_message: string
+          error_stack?: string | null
+          error_type: string
+          id?: string
+          is_resolved?: boolean | null
+          metadata?: Json | null
+          resolved_at?: string | null
+          severity?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          component?: string | null
+          created_at?: string
+          error_message?: string
+          error_stack?: string | null
+          error_type?: string
+          id?: string
+          is_resolved?: boolean | null
+          metadata?: Json | null
+          resolved_at?: string | null
+          severity?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       event_connections: {
         Row: {
           contact_id: string
@@ -1224,6 +1800,63 @@ export type Database = {
           },
         ]
       }
+      external_certifications: {
+        Row: {
+          badge_url: string | null
+          certification_name: string
+          certification_url: string | null
+          completion_date: string | null
+          created_at: string
+          id: string
+          is_verified: boolean | null
+          platform: string
+          platform_username: string | null
+          profile_url: string | null
+          rank: string | null
+          score: string | null
+          skills_validated: Json | null
+          updated_at: string
+          user_id: string
+          verified_at: string | null
+        }
+        Insert: {
+          badge_url?: string | null
+          certification_name: string
+          certification_url?: string | null
+          completion_date?: string | null
+          created_at?: string
+          id?: string
+          is_verified?: boolean | null
+          platform: string
+          platform_username?: string | null
+          profile_url?: string | null
+          rank?: string | null
+          score?: string | null
+          skills_validated?: Json | null
+          updated_at?: string
+          user_id: string
+          verified_at?: string | null
+        }
+        Update: {
+          badge_url?: string | null
+          certification_name?: string
+          certification_url?: string | null
+          completion_date?: string | null
+          created_at?: string
+          id?: string
+          is_verified?: boolean | null
+          platform?: string
+          platform_username?: string | null
+          profile_url?: string | null
+          rank?: string | null
+          score?: string | null
+          skills_validated?: Json | null
+          updated_at?: string
+          user_id?: string
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
       family_supporters: {
         Row: {
           accepted_at: string | null
@@ -1269,6 +1902,104 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_analytics: {
+        Row: {
+          browser: string | null
+          created_at: string
+          device_type: string | null
+          event_category: string | null
+          event_name: string
+          event_properties: Json | null
+          id: string
+          page_path: string | null
+          referrer: string | null
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          browser?: string | null
+          created_at?: string
+          device_type?: string | null
+          event_category?: string | null
+          event_name: string
+          event_properties?: Json | null
+          id?: string
+          page_path?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          browser?: string | null
+          created_at?: string
+          device_type?: string | null
+          event_category?: string | null
+          event_name?: string
+          event_properties?: Json | null
+          id?: string
+          page_path?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      follow_up_reminders: {
+        Row: {
+          auto_generated: boolean | null
+          completed_at: string | null
+          created_at: string
+          dismissed_at: string | null
+          email_template: string | null
+          id: string
+          job_id: string | null
+          notes: string | null
+          reminder_type: string
+          scheduled_date: string
+          snoozed_until: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_generated?: boolean | null
+          completed_at?: string | null
+          created_at?: string
+          dismissed_at?: string | null
+          email_template?: string | null
+          id?: string
+          job_id?: string | null
+          notes?: string | null
+          reminder_type: string
+          scheduled_date: string
+          snoozed_until?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_generated?: boolean | null
+          completed_at?: string | null
+          created_at?: string
+          dismissed_at?: string | null
+          email_template?: string | null
+          id?: string
+          job_id?: string | null
+          notes?: string | null
+          reminder_type?: string
+          scheduled_date?: string
+          snoozed_until?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follow_up_reminders_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forecasts: {
         Row: {
           accuracy_score: number | null
@@ -1308,6 +2039,156 @@ export type Database = {
           prediction_value?: number
           target_date?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      geocoded_locations: {
+        Row: {
+          cached_at: string
+          city: string | null
+          country: string | null
+          formatted_address: string | null
+          id: string
+          latitude: number | null
+          location_string: string
+          longitude: number | null
+          state: string | null
+          timezone: string | null
+        }
+        Insert: {
+          cached_at?: string
+          city?: string | null
+          country?: string | null
+          formatted_address?: string | null
+          id?: string
+          latitude?: number | null
+          location_string: string
+          longitude?: number | null
+          state?: string | null
+          timezone?: string | null
+        }
+        Update: {
+          cached_at?: string
+          city?: string | null
+          country?: string | null
+          formatted_address?: string | null
+          id?: string
+          latitude?: number | null
+          location_string?: string
+          longitude?: number | null
+          state?: string | null
+          timezone?: string | null
+        }
+        Relationships: []
+      }
+      github_integrations: {
+        Row: {
+          access_token: string | null
+          avatar_url: string | null
+          created_at: string
+          followers: number | null
+          github_username: string
+          id: string
+          last_synced_at: string | null
+          profile_url: string | null
+          public_repos: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          followers?: number | null
+          github_username: string
+          id?: string
+          last_synced_at?: string | null
+          profile_url?: string | null
+          public_repos?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          followers?: number | null
+          github_username?: string
+          id?: string
+          last_synced_at?: string | null
+          profile_url?: string | null
+          public_repos?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      github_repositories: {
+        Row: {
+          created_at: string
+          created_at_github: string | null
+          description: string | null
+          forks_count: number | null
+          full_name: string | null
+          github_id: number
+          html_url: string
+          id: string
+          is_featured: boolean | null
+          language: string | null
+          languages: Json | null
+          last_commit_at: string | null
+          name: string
+          open_issues_count: number | null
+          stargazers_count: number | null
+          topics: Json | null
+          updated_at: string
+          updated_at_github: string | null
+          user_id: string
+          watchers_count: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_at_github?: string | null
+          description?: string | null
+          forks_count?: number | null
+          full_name?: string | null
+          github_id: number
+          html_url: string
+          id?: string
+          is_featured?: boolean | null
+          language?: string | null
+          languages?: Json | null
+          last_commit_at?: string | null
+          name: string
+          open_issues_count?: number | null
+          stargazers_count?: number | null
+          topics?: Json | null
+          updated_at?: string
+          updated_at_github?: string | null
+          user_id: string
+          watchers_count?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_at_github?: string | null
+          description?: string | null
+          forks_count?: number | null
+          full_name?: string | null
+          github_id?: number
+          html_url?: string
+          id?: string
+          is_featured?: boolean | null
+          language?: string | null
+          languages?: Json | null
+          last_commit_at?: string | null
+          name?: string
+          open_issues_count?: number | null
+          stargazers_count?: number | null
+          topics?: Json | null
+          updated_at?: string
+          updated_at_github?: string | null
+          user_id?: string
+          watchers_count?: number | null
         }
         Relationships: []
       }
@@ -1733,6 +2614,66 @@ export type Database = {
           },
         ]
       }
+      interview_response_library: {
+        Row: {
+          ai_feedback: string | null
+          ai_feedback_score: number | null
+          companies_used_for: Json | null
+          created_at: string
+          experiences_referenced: Json | null
+          id: string
+          is_starred: boolean | null
+          question_text: string
+          question_type: string
+          response_text: string
+          skills_demonstrated: Json | null
+          success_count: number | null
+          tags: Json | null
+          times_used: number | null
+          updated_at: string
+          user_id: string
+          version: number | null
+        }
+        Insert: {
+          ai_feedback?: string | null
+          ai_feedback_score?: number | null
+          companies_used_for?: Json | null
+          created_at?: string
+          experiences_referenced?: Json | null
+          id?: string
+          is_starred?: boolean | null
+          question_text: string
+          question_type: string
+          response_text: string
+          skills_demonstrated?: Json | null
+          success_count?: number | null
+          tags?: Json | null
+          times_used?: number | null
+          updated_at?: string
+          user_id: string
+          version?: number | null
+        }
+        Update: {
+          ai_feedback?: string | null
+          ai_feedback_score?: number | null
+          companies_used_for?: Json | null
+          created_at?: string
+          experiences_referenced?: Json | null
+          id?: string
+          is_starred?: boolean | null
+          question_text?: string
+          question_type?: string
+          response_text?: string
+          skills_demonstrated?: Json | null
+          success_count?: number | null
+          tags?: Json | null
+          times_used?: number | null
+          updated_at?: string
+          user_id?: string
+          version?: number | null
+        }
+        Relationships: []
+      }
       interview_success_predictions: {
         Row: {
           actual_outcome: string | null
@@ -1869,6 +2810,68 @@ export type Database = {
           },
         ]
       }
+      job_locations: {
+        Row: {
+          address: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          geocoded_at: string | null
+          id: string
+          job_id: string | null
+          latitude: number | null
+          location_type: string | null
+          longitude: number | null
+          postal_code: string | null
+          state: string | null
+          timezone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          geocoded_at?: string | null
+          id?: string
+          job_id?: string | null
+          latitude?: number | null
+          location_type?: string | null
+          longitude?: number | null
+          postal_code?: string | null
+          state?: string | null
+          timezone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          geocoded_at?: string | null
+          id?: string
+          job_id?: string | null
+          latitude?: number | null
+          location_type?: string | null
+          longitude?: number | null
+          postal_code?: string | null
+          state?: string | null
+          timezone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_locations_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: true
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_match_scores: {
         Row: {
           created_at: string | null
@@ -1919,10 +2922,96 @@ export type Database = {
           },
         ]
       }
+      job_offers: {
+        Row: {
+          base_salary: number | null
+          bonus: number | null
+          company_name: string
+          cost_of_living_index: number | null
+          created_at: string
+          culture_score: number | null
+          deadline: string | null
+          decline_reason: string | null
+          equity_value: number | null
+          growth_score: number | null
+          health_insurance_value: number | null
+          id: string
+          job_id: string | null
+          job_title: string
+          location: string | null
+          notes: string | null
+          pto_days: number | null
+          remote_policy: string | null
+          retirement_match: number | null
+          signing_bonus: number | null
+          start_date: string | null
+          status: string | null
+          updated_at: string
+          user_id: string
+          work_life_balance_score: number | null
+        }
+        Insert: {
+          base_salary?: number | null
+          bonus?: number | null
+          company_name: string
+          cost_of_living_index?: number | null
+          created_at?: string
+          culture_score?: number | null
+          deadline?: string | null
+          decline_reason?: string | null
+          equity_value?: number | null
+          growth_score?: number | null
+          health_insurance_value?: number | null
+          id?: string
+          job_id?: string | null
+          job_title: string
+          location?: string | null
+          notes?: string | null
+          pto_days?: number | null
+          remote_policy?: string | null
+          retirement_match?: number | null
+          signing_bonus?: number | null
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+          work_life_balance_score?: number | null
+        }
+        Update: {
+          base_salary?: number | null
+          bonus?: number | null
+          company_name?: string
+          cost_of_living_index?: number | null
+          created_at?: string
+          culture_score?: number | null
+          deadline?: string | null
+          decline_reason?: string | null
+          equity_value?: number | null
+          growth_score?: number | null
+          health_insurance_value?: number | null
+          id?: string
+          job_id?: string | null
+          job_title?: string
+          location?: string | null
+          notes?: string | null
+          pto_days?: number | null
+          remote_policy?: string | null
+          retirement_match?: number | null
+          signing_bonus?: number | null
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+          work_life_balance_score?: number | null
+        }
+        Relationships: []
+      }
       jobs: {
         Row: {
           application_deadline: string | null
           archive_reason: string | null
+          commute_distance_miles: number | null
+          commute_time_minutes: number | null
           company_info: Json | null
           company_name: string
           contacts: Json | null
@@ -1936,7 +3025,9 @@ export type Database = {
           job_title: string
           job_type: string | null
           job_url: string | null
+          latitude: number | null
           location: string | null
+          longitude: number | null
           notes: string | null
           resume_id: string | null
           salary_max: number | null
@@ -1951,6 +3042,8 @@ export type Database = {
         Insert: {
           application_deadline?: string | null
           archive_reason?: string | null
+          commute_distance_miles?: number | null
+          commute_time_minutes?: number | null
           company_info?: Json | null
           company_name: string
           contacts?: Json | null
@@ -1964,7 +3057,9 @@ export type Database = {
           job_title: string
           job_type?: string | null
           job_url?: string | null
+          latitude?: number | null
           location?: string | null
+          longitude?: number | null
           notes?: string | null
           resume_id?: string | null
           salary_max?: number | null
@@ -1979,6 +3074,8 @@ export type Database = {
         Update: {
           application_deadline?: string | null
           archive_reason?: string | null
+          commute_distance_miles?: number | null
+          commute_time_minutes?: number | null
           company_info?: Json | null
           company_name?: string
           contacts?: Json | null
@@ -1992,7 +3089,9 @@ export type Database = {
           job_title?: string
           job_type?: string | null
           job_url?: string | null
+          latitude?: number | null
           location?: string | null
+          longitude?: number | null
           notes?: string | null
           resume_id?: string | null
           salary_max?: number | null
@@ -2440,54 +3539,129 @@ export type Database = {
           },
         ]
       }
+      offer_comparisons: {
+        Row: {
+          comparison_weights: Json | null
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          offer_ids: Json | null
+          updated_at: string
+          user_id: string
+          winner_offer_id: string | null
+        }
+        Insert: {
+          comparison_weights?: Json | null
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          offer_ids?: Json | null
+          updated_at?: string
+          user_id: string
+          winner_offer_id?: string | null
+        }
+        Update: {
+          comparison_weights?: Json | null
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          offer_ids?: Json | null
+          updated_at?: string
+          user_id?: string
+          winner_offer_id?: string | null
+        }
+        Relationships: []
+      }
       offers: {
         Row: {
+          adjusted_compensation: number | null
           base_salary: number | null
           bonus: number | null
+          commute_time_minutes: number | null
           confidence_checklist: Json | null
+          cost_of_living_index: number | null
           created_at: string
+          culture_fit_score: number | null
           equity: string | null
+          growth_opportunities_score: number | null
+          health_insurance_value: number | null
           id: string
           job_id: string
           level: string | null
           location: string | null
           market_data: Json | null
           notes: string | null
+          pto_days: number | null
+          relocation_bonus: number | null
+          remote_policy: string | null
+          retirement_match_percent: number | null
+          signing_bonus: number | null
           status: string
+          total_compensation: number | null
           updated_at: string
           user_id: string
+          work_life_balance_score: number | null
         }
         Insert: {
+          adjusted_compensation?: number | null
           base_salary?: number | null
           bonus?: number | null
+          commute_time_minutes?: number | null
           confidence_checklist?: Json | null
+          cost_of_living_index?: number | null
           created_at?: string
+          culture_fit_score?: number | null
           equity?: string | null
+          growth_opportunities_score?: number | null
+          health_insurance_value?: number | null
           id?: string
           job_id: string
           level?: string | null
           location?: string | null
           market_data?: Json | null
           notes?: string | null
+          pto_days?: number | null
+          relocation_bonus?: number | null
+          remote_policy?: string | null
+          retirement_match_percent?: number | null
+          signing_bonus?: number | null
           status?: string
+          total_compensation?: number | null
           updated_at?: string
           user_id: string
+          work_life_balance_score?: number | null
         }
         Update: {
+          adjusted_compensation?: number | null
           base_salary?: number | null
           bonus?: number | null
+          commute_time_minutes?: number | null
           confidence_checklist?: Json | null
+          cost_of_living_index?: number | null
           created_at?: string
+          culture_fit_score?: number | null
           equity?: string | null
+          growth_opportunities_score?: number | null
+          health_insurance_value?: number | null
           id?: string
           job_id?: string
           level?: string | null
           location?: string | null
           market_data?: Json | null
           notes?: string | null
+          pto_days?: number | null
+          relocation_bonus?: number | null
+          remote_policy?: string | null
+          retirement_match_percent?: number | null
+          signing_bonus?: number | null
           status?: string
+          total_compensation?: number | null
           updated_at?: string
           user_id?: string
+          work_life_balance_score?: number | null
         }
         Relationships: [
           {
@@ -2542,6 +3716,68 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "support_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_applications: {
+        Row: {
+          applied_at: string | null
+          created_at: string
+          detected_from: string | null
+          duplicate_of_id: string | null
+          id: string
+          is_duplicate: boolean | null
+          job_id: string | null
+          last_platform_update: string | null
+          platform: string
+          platform_job_id: string | null
+          platform_url: string | null
+          raw_data: Json | null
+          status_on_platform: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          applied_at?: string | null
+          created_at?: string
+          detected_from?: string | null
+          duplicate_of_id?: string | null
+          id?: string
+          is_duplicate?: boolean | null
+          job_id?: string | null
+          last_platform_update?: string | null
+          platform: string
+          platform_job_id?: string | null
+          platform_url?: string | null
+          raw_data?: Json | null
+          status_on_platform?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          applied_at?: string | null
+          created_at?: string
+          detected_from?: string | null
+          duplicate_of_id?: string | null
+          id?: string
+          is_duplicate?: boolean | null
+          job_id?: string | null
+          last_platform_update?: string | null
+          platform?: string
+          platform_job_id?: string | null
+          platform_url?: string | null
+          raw_data?: Json | null
+          status_on_platform?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
             referencedColumns: ["id"]
           },
         ]
@@ -3030,6 +4266,62 @@ export type Database = {
           },
         ]
       }
+      response_time_predictions: {
+        Row: {
+          actual_response_days: number | null
+          confidence_percent: number | null
+          created_at: string
+          factors: Json | null
+          id: string
+          is_overdue: boolean | null
+          job_id: string
+          predicted_days_avg: number | null
+          predicted_days_max: number | null
+          predicted_days_min: number | null
+          suggested_followup_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actual_response_days?: number | null
+          confidence_percent?: number | null
+          created_at?: string
+          factors?: Json | null
+          id?: string
+          is_overdue?: boolean | null
+          job_id: string
+          predicted_days_avg?: number | null
+          predicted_days_max?: number | null
+          predicted_days_min?: number | null
+          suggested_followup_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actual_response_days?: number | null
+          confidence_percent?: number | null
+          created_at?: string
+          factors?: Json | null
+          id?: string
+          is_overdue?: boolean | null
+          job_id?: string
+          predicted_days_avg?: number | null
+          predicted_days_max?: number | null
+          predicted_days_min?: number | null
+          suggested_followup_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "response_time_predictions_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: true
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       resume_comments: {
         Row: {
           author_name: string
@@ -3256,6 +4548,54 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           versions?: Json | null
+        }
+        Relationships: []
+      }
+      salary_benchmarks: {
+        Row: {
+          created_at: string
+          data_source: string
+          fetched_at: string
+          id: string
+          industry: string | null
+          job_title: string
+          location: string | null
+          percentile_25: number | null
+          percentile_50: number | null
+          percentile_75: number | null
+          sample_size: number | null
+          source_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_source?: string
+          fetched_at?: string
+          id?: string
+          industry?: string | null
+          job_title: string
+          location?: string | null
+          percentile_25?: number | null
+          percentile_50?: number | null
+          percentile_75?: number | null
+          sample_size?: number | null
+          source_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_source?: string
+          fetched_at?: string
+          id?: string
+          industry?: string | null
+          job_title?: string
+          location?: string | null
+          percentile_25?: number | null
+          percentile_50?: number | null
+          percentile_75?: number | null
+          sample_size?: number | null
+          source_url?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -3732,6 +5072,51 @@ export type Database = {
           metric_type?: string
           period?: string
           target_value?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_home_location: {
+        Row: {
+          address: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          postal_code: string | null
+          state: string | null
+          timezone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          postal_code?: string | null
+          state?: string | null
+          timezone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          postal_code?: string | null
+          state?: string | null
+          timezone?: string | null
           updated_at?: string
           user_id?: string
         }

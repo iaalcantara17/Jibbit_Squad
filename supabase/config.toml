@@ -83,3 +83,64 @@ verify_jwt = false
 
 [functions.linkedin-oauth-callback]
 verify_jwt = false
+
+[functions.calendar-oauth-start]
+verify_jwt = true
+
+[functions.calendar-oauth-callback]
+verify_jwt = false
+
+[functions.email-poller]
+verify_jwt = true
+
+[functions.resume-share-comment]
+verify_jwt = false
+
+[functions.resume-share-resolve]
+verify_jwt = false
+
+[functions.google-contacts-import]
+verify_jwt = true
+
+[functions.google-contacts-oauth-callback]
+verify_jwt = false
+
+# Sprint 4 Functions - UC-112 to UC-128
+[functions.salary-benchmark]
+verify_jwt = true
+
+[functions.github-integration]
+verify_jwt = true
+
+[functions.geocode-location]
+verify_jwt = true
+
+[functions.application-quality-score]
+verify_jwt = true
+
+[functions.response-time-prediction]
+verify_jwt = true
+
+[functions.offer-comparison]
+verify_jwt = true
+
+[functions.smart-followup]
+verify_jwt = true
+
+[functions.competitive-analysis]
+verify_jwt = true
+
+[functions.timing-optimizer]
+verify_jwt = true
+
+[functions.career-simulation]
+verify_jwt = true
+
+[functions.interview-response-library]
+verify_jwt = true
+
+[functions.external-skills]
+verify_jwt = true
+
+[functions.application-optimization]
+verify_jwt = true

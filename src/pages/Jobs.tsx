@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Navigation } from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, LayoutGrid, TrendingUp, Calendar } from 'lucide-react';
+import { Plus, LayoutGrid, TrendingUp, Calendar, MapPin } from 'lucide-react';
 import { JobForm } from '@/components/jobs/JobForm';
 import { JobCard } from '@/components/jobs/JobCard';
 import { JobDetailsModal } from '@/components/jobs/JobDetailsModal';
@@ -21,6 +21,7 @@ import { JobPipeline } from '@/components/jobs/JobPipeline';
 
 const Jobs = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -191,6 +192,15 @@ const Jobs = () => {
                   className="rounded-l-none"
                 >
                   <Calendar className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/jobs/map')}
+                  className="rounded-l-none border-l"
+                  title="Map View"
+                >
+                  <MapPin className="h-4 w-4" />
                 </Button>
               </div>
               <Button onClick={() => setIsAddDialogOpen(true)}>

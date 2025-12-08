@@ -72,6 +72,16 @@ import InstitutionalAdmin from "./pages/InstitutionalAdmin";
 import AdvisorMarketplace from "./pages/AdvisorMarketplace";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+// Sprint 4 imports
+import ApplicationSuccessOptimization from "./pages/ApplicationSuccessOptimization";
+import ABTestingDashboard from "./pages/ABTestingDashboard";
+import InterviewResponseLibrary from "./pages/InterviewResponseLibrary";
+import OfferComparisonTool from "./pages/OfferComparisonTool";
+import CareerPathSimulation from "./pages/CareerPathSimulation";
+import ApiAdminDashboard from "./pages/ApiAdminDashboard";
+import JobMap from "./pages/JobMap";
+import JobArchive from "./pages/JobArchive";
+import { CookieConsent } from "./components/sprint4/CookieConsent";
 
 const queryClient = new QueryClient();
  
@@ -114,6 +124,22 @@ const App = () => (
                 } 
               />
               <Route 
+                path="/jobs/map" 
+                element={
+                  <ProtectedRoute>
+                    <JobMap />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/jobs/archive" 
+                element={
+                  <ProtectedRoute>
+                    <JobArchive />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route
                 path="/resumes" 
                 element={
                   <ProtectedRoute>
@@ -529,6 +555,55 @@ const App = () => (
                   </ProtectedRoute>
                 } 
               />
+              {/* Sprint 4 Routes */}
+              <Route 
+                path="/optimization"
+                element={
+                  <ProtectedRoute>
+                    <ApplicationSuccessOptimization />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/ab-testing"
+                element={
+                  <ProtectedRoute>
+                    <ABTestingDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/interview-responses"
+                element={
+                  <ProtectedRoute>
+                    <InterviewResponseLibrary />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/offer-comparison"
+                element={
+                  <ProtectedRoute>
+                    <OfferComparisonTool />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/career-simulation"
+                element={
+                  <ProtectedRoute>
+                    <CareerPathSimulation />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/api"
+                element={
+                  <ProtectedRoute>
+                    <ApiAdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
               {/* Public routes - no auth required */}
               <Route path="/r/:token" element={<PublicReviewerView />} />
               <Route path="/progress/:token" element={<SharedProgress />} />
@@ -538,6 +613,7 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <CookieConsent />
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>
