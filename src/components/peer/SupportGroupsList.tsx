@@ -105,8 +105,7 @@ export const SupportGroupsList = () => {
         .maybeSingle();
 
       if (existing) {
-        toast.info('You are already a member of this group');
-        return;
+        throw new Error('You are already a member of this group');
       }
 
       const { error } = await supabase.from('support_group_members').insert({
@@ -116,13 +115,28 @@ export const SupportGroupsList = () => {
       });
 
       if (error) throw error;
+      
+      // Update the member_count in support_groups table
+      const { count } = await supabase
+        .from('support_group_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('group_id', groupId);
+      
+      await supabase
+        .from('support_groups')
+        .update({ member_count: count || 1 })
+        .eq('id', groupId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['support-groups'] });
       toast.success('Joined group successfully!');
     },
     onError: (error: any) => {
-      toast.error('Failed to join group: ' + error.message);
+      if (error.message.includes('already a member')) {
+        toast.info(error.message);
+      } else {
+        toast.error('Failed to join group: ' + error.message);
+      }
     },
   });
 

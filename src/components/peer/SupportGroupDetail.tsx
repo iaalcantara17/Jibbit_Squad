@@ -166,10 +166,22 @@ export const SupportGroupDetail = ({ groupId, onBack }: SupportGroupDetailProps)
         });
 
       if (error) throw error;
+
+      // Update the member_count in support_groups table
+      const { count } = await supabase
+        .from('support_group_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('group_id', groupId);
+      
+      await supabase
+        .from('support_groups')
+        .update({ member_count: count || 1 })
+        .eq('id', groupId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['support-group-membership', groupId] });
       queryClient.invalidateQueries({ queryKey: ['support-group-members', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['support-groups'] });
       toast.success('Joined group successfully!');
     },
     onError: (error: any) => {
@@ -190,10 +202,22 @@ export const SupportGroupDetail = ({ groupId, onBack }: SupportGroupDetailProps)
         .eq('user_id', user.id);
 
       if (error) throw error;
+
+      // Update the member_count in support_groups table
+      const { count } = await supabase
+        .from('support_group_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('group_id', groupId);
+      
+      await supabase
+        .from('support_groups')
+        .update({ member_count: count || 0 })
+        .eq('id', groupId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['support-group-membership', groupId] });
       queryClient.invalidateQueries({ queryKey: ['support-group-members', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['support-groups'] });
       toast.success('Left group successfully');
     },
     onError: (error: any) => {
