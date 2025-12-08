@@ -1,0 +1,79 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - navigation [ref=e4]:
+      - generic [ref=e5]:
+        - link "JibbitATS logo" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - img "JibbitATS logo" [ref=e7]
+        - generic [ref=e8]:
+          - button "Toggle theme" [ref=e9] [cursor=pointer]:
+            - img
+          - link "Login" [ref=e10] [cursor=pointer]:
+            - /url: /login
+            - button "Login" [ref=e11]
+          - link "Get Started" [ref=e12] [cursor=pointer]:
+            - /url: /register
+            - button "Get Started" [ref=e13]
+        - button "Toggle menu" [ref=e14] [cursor=pointer]:
+          - img [ref=e15]
+    - generic [ref=e17]:
+      - heading "Empower Your Job Search with JibbitATS" [level=1] [ref=e18]
+      - paragraph [ref=e19]: The modern ATS platform designed for candidates. Build, manage, and showcase your professional profile with ease.
+      - generic [ref=e20]:
+        - link "Get Started Free" [ref=e21] [cursor=pointer]:
+          - /url: /register
+          - button "Get Started Free" [ref=e22]:
+            - text: Get Started Free
+            - img
+        - link "Sign In" [ref=e23] [cursor=pointer]:
+          - /url: /login
+          - button "Sign In" [ref=e24]
+    - generic [ref=e26]:
+      - generic [ref=e27]:
+        - heading "Everything You Need to Stand Out" [level=2] [ref=e28]
+        - paragraph [ref=e29]: Powerful features to showcase your professional journey
+      - generic [ref=e30]:
+        - generic [ref=e32]:
+          - img [ref=e34]
+          - heading "Career Timeline" [level=3] [ref=e37]
+          - paragraph [ref=e38]: Document your employment history, skills, and achievements in a structured, professional format.
+        - generic [ref=e40]:
+          - img [ref=e42]
+          - heading "Profile Management" [level=3] [ref=e45]
+          - paragraph [ref=e46]: Create comprehensive profiles with education, certifications, and special projects all in one place.
+        - generic [ref=e48]:
+          - img [ref=e50]
+          - heading "Track Your Progress" [level=3] [ref=e53]
+          - paragraph [ref=e54]: Monitor your profile completeness and get suggestions to improve your professional presentation.
+    - contentinfo [ref=e55]:
+      - generic [ref=e56]:
+        - paragraph [ref=e57]: © 2025 JibbitATS. All rights reserved.
+        - generic [ref=e58]:
+          - link "Privacy Policy" [ref=e59] [cursor=pointer]:
+            - /url: /privacy
+          - link "Terms of Service" [ref=e60] [cursor=pointer]:
+            - /url: /terms
+  - generic [ref=e64]:
+    - generic [ref=e65]:
+      - img [ref=e66]
+      - generic [ref=e68]:
+        - heading "We value your privacy" [level=3] [ref=e69]
+        - paragraph [ref=e70]:
+          - text: We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. By clicking "Accept All", you consent to our use of cookies.
+          - link "Read our Privacy Policy" [ref=e71] [cursor=pointer]:
+            - /url: /privacy
+    - generic [ref=e72]:
+      - button "Customize" [ref=e73] [cursor=pointer]:
+        - img
+        - text: Customize
+      - button "Necessary Only" [ref=e74] [cursor=pointer]
+      - button "Accept All" [ref=e75] [cursor=pointer]
+      - button [ref=e76] [cursor=pointer]:
+        - img
+```

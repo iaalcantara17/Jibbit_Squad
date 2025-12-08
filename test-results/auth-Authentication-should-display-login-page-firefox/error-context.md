@@ -1,0 +1,76 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - navigation [ref=e4]:
+      - generic [ref=e5]:
+        - link "JibbitATS logo" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - img "JibbitATS logo" [ref=e7]
+        - generic [ref=e8]:
+          - button "Toggle theme" [ref=e9] [cursor=pointer]:
+            - img
+          - link "Login" [ref=e10] [cursor=pointer]:
+            - /url: /login
+            - button "Login" [ref=e11]
+          - link "Get Started" [ref=e12] [cursor=pointer]:
+            - /url: /register
+            - button "Get Started" [ref=e13]
+    - generic [ref=e15]:
+      - generic [ref=e16]:
+        - heading "Welcome Back" [level=3] [ref=e17]
+        - paragraph [ref=e18]: Sign in to your JibbitATS account
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - generic [ref=e21]:
+            - button "Google" [ref=e22] [cursor=pointer]:
+              - img
+              - text: Google
+            - button "Microsoft" [ref=e23] [cursor=pointer]:
+              - img
+              - text: Microsoft
+          - generic [ref=e24]:
+            - button [ref=e25] [cursor=pointer]:
+              - img
+            - button [ref=e26] [cursor=pointer]:
+              - img
+            - button [ref=e27] [cursor=pointer]:
+              - img
+          - generic [ref=e31]: Or continue with
+          - generic [ref=e32]:
+            - generic [ref=e33]:
+              - text: Email
+              - textbox "Email" [ref=e34]
+            - generic [ref=e35]:
+              - generic [ref=e36]:
+                - generic [ref=e37]: Password
+                - link "Forgot password?" [ref=e38] [cursor=pointer]:
+                  - /url: /forgot-password
+              - textbox "Password" [ref=e39]
+            - button "Sign In" [ref=e40] [cursor=pointer]
+        - paragraph [ref=e41]:
+          - text: Don't have an account?
+          - link "Sign up" [ref=e42] [cursor=pointer]:
+            - /url: /register
+  - generic [ref=e46]:
+    - generic [ref=e47]:
+      - img [ref=e48]
+      - generic [ref=e55]:
+        - heading "We value your privacy" [level=3] [ref=e56]
+        - paragraph [ref=e57]:
+          - text: We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. By clicking "Accept All", you consent to our use of cookies.
+          - link "Read our Privacy Policy" [ref=e58] [cursor=pointer]:
+            - /url: /privacy
+    - generic [ref=e59]:
+      - button "Customize" [ref=e60] [cursor=pointer]:
+        - img
+        - text: Customize
+      - button "Necessary Only" [ref=e61] [cursor=pointer]
+      - button "Accept All" [ref=e62] [cursor=pointer]
+      - button [ref=e63] [cursor=pointer]:
+        - img
+```

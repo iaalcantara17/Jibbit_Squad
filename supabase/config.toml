@@ -144,3 +144,6 @@ verify_jwt = true
 
 [functions.application-optimization]
 verify_jwt = true
+
+[functions.delete-account]
+verify_jwt = true

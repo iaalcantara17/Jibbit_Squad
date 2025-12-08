@@ -148,11 +148,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: 'No user logged in' };
       }
 
-      // For Supabase, we need to delete the user
-      const { error } = await supabase.auth.admin.deleteUser(user.id);
+      // Call the delete-account edge function with server-side verification
+      const { data, error } = await supabase.functions.invoke('delete-account', {
+        body: isOAuthUser 
+          ? { confirmationText: password, isOAuthUser: true }
+          : { password, isOAuthUser: false }
+      });
       
       if (error) {
         return { success: false, error: error.message };
+      }
+
+      if (!data?.success) {
+        return { success: false, error: data?.error || 'Failed to delete account' };
       }
 
       await logout();

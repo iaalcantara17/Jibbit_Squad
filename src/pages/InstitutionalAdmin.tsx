@@ -1,12 +1,19 @@
 import { Navigation } from '@/components/Navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, Shield, FileText, Info } from 'lucide-react';
+import { Building2, Users, Shield, FileText, Info, CreditCard, Globe, Plug } from 'lucide-react';
 import { InstitutionalSettings } from '@/components/institutional/InstitutionalSettings';
 import { BulkOnboarding } from '@/components/institutional/BulkOnboarding';
 import { ComplianceManager } from '@/components/institutional/ComplianceManager';
 import { AggregateReporting } from '@/components/institutional/AggregateReporting';
+import { BillingSubscriptionManager } from '@/components/institutional/BillingSubscriptionManager';
+import { WhiteLabelDomainConfig } from '@/components/institutional/WhiteLabelDomainConfig';
+import { PlatformIntegrations } from '@/components/institutional/PlatformIntegrations';
 
+/**
+ * Sprint 3 UC-114: Corporate Career Services Integration
+ * Institutional admin dashboard for managing career services at scale
+ */
 const InstitutionalAdmin = () => {
   return (
     <div className="min-h-screen flex flex-col">
@@ -39,15 +46,21 @@ const InstitutionalAdmin = () => {
                 <li><strong>Bulk Onboarding:</strong> Import and manage cohorts of students or participants</li>
                 <li><strong>Compliance:</strong> FERPA, GDPR, and data retention policy management</li>
                 <li><strong>Reporting:</strong> Aggregate analytics across all participants</li>
+                <li><strong>Billing:</strong> Subscription management for team accounts</li>
+                <li><strong>Integrations:</strong> Connect with existing career services platforms</li>
               </ul>
             </CardContent>
           </Card>
 
           <Tabs defaultValue="settings" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="settings" className="flex items-center gap-2">
                 <Building2 className="h-4 w-4" />
-                <span className="hidden sm:inline">White-Label</span>
+                <span className="hidden sm:inline">Branding</span>
+              </TabsTrigger>
+              <TabsTrigger value="domain" className="flex items-center gap-2">
+                <Globe className="h-4 w-4" />
+                <span className="hidden sm:inline">Domain</span>
               </TabsTrigger>
               <TabsTrigger value="onboarding" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
@@ -61,10 +74,22 @@ const InstitutionalAdmin = () => {
                 <FileText className="h-4 w-4" />
                 <span className="hidden sm:inline">Reporting</span>
               </TabsTrigger>
+              <TabsTrigger value="billing" className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />
+                <span className="hidden sm:inline">Billing</span>
+              </TabsTrigger>
+              <TabsTrigger value="integrations" className="flex items-center gap-2">
+                <Plug className="h-4 w-4" />
+                <span className="hidden sm:inline">Integrations</span>
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="settings" className="space-y-6 mt-6">
               <InstitutionalSettings />
+            </TabsContent>
+
+            <TabsContent value="domain" className="space-y-6 mt-6">
+              <WhiteLabelDomainConfig />
             </TabsContent>
 
             <TabsContent value="onboarding" className="space-y-6 mt-6">
@@ -77,6 +102,14 @@ const InstitutionalAdmin = () => {
 
             <TabsContent value="reporting" className="space-y-6 mt-6">
               <AggregateReporting />
+            </TabsContent>
+
+            <TabsContent value="billing" className="space-y-6 mt-6">
+              <BillingSubscriptionManager />
+            </TabsContent>
+
+            <TabsContent value="integrations" className="space-y-6 mt-6">
+              <PlatformIntegrations />
             </TabsContent>
           </Tabs>
         </div>
