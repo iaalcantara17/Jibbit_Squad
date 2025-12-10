@@ -291,7 +291,7 @@ export default function CareerPathSimulation() {
                 <CardContent>
                   <div className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={simulation.paths}>
+                      <AreaChart data={simulation.paths || []}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="year" label={{ value: 'Year', position: 'bottom' }} />
                         <YAxis 
@@ -353,7 +353,7 @@ export default function CareerPathSimulation() {
                       <Badge>Current</Badge>
                     </div>
 
-                    {simulation.paths.map((path, idx) => (
+                    {(simulation.paths || []).map((path, idx) => (
                       <div key={idx} className="flex items-center gap-3 p-3 border rounded-lg">
                         <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted font-bold">
                           {path.year}
@@ -383,7 +383,7 @@ export default function CareerPathSimulation() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {simulation.key_milestones.map((milestone, idx) => (
+                      {(simulation.key_milestones || []).map((milestone, idx) => (
                         <div key={idx} className="flex items-center gap-3 p-3 bg-success/10 rounded-lg">
                           <Badge variant="secondary">Year {milestone.year}</Badge>
                           <span className="text-sm">{milestone.event}</span>
@@ -402,7 +402,7 @@ export default function CareerPathSimulation() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      {simulation.risk_factors.map((risk, idx) => (
+                      {(simulation.risk_factors || []).map((risk, idx) => (
                         <p key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
                           <span className="text-warning">•</span>
                           {risk}
