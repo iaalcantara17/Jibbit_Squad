@@ -112,7 +112,7 @@ export default function OfferComparisonTool() {
                       (offer.bonus || 0) + 
                       (offer.equity_value || 0) + 
                       (offer.health_insurance_value || 0) + 
-                      (offer.retirement_401k_match || 0) +
+                      (offer.retirement_match || 0) +
                       ((offer.pto_days || 0) * 500); // Value PTO at ~$500/day
 
     // Cost of living adjustment (simplified)
@@ -128,11 +128,13 @@ export default function OfferComparisonTool() {
       (compScore * weights.compensation / 100) +
       ((offer.culture_score || 5) * 10 * weights.culture / 100) +
       ((offer.growth_score || 5) * 10 * weights.growth / 100) +
-      ((offer.wlb_score || 5) * 10 * weights.workLifeBalance / 100)
+      ((offer.work_life_balance_score || 5) * 10 * weights.workLifeBalance / 100)
     );
 
     return {
       ...offer,
+      retirement_401k_match: offer.retirement_match,
+      wlb_score: offer.work_life_balance_score,
       total_compensation: totalComp,
       adjusted_compensation: adjustedComp,
       weighted_score: Math.round(weightedScore)
@@ -150,7 +152,19 @@ export default function OfferComparisonTool() {
         .from('job_offers')
         .insert({
           user_id: user.id,
-          ...formData,
+          company_name: formData.company_name,
+          job_title: formData.job_title || 'Untitled Position',
+          base_salary: formData.base_salary,
+          bonus: formData.bonus || null,
+          equity_value: formData.equity_value || null,
+          health_insurance_value: formData.health_insurance_value || null,
+          retirement_match: formData.retirement_401k_match || null,
+          pto_days: formData.pto_days || null,
+          location: formData.location || null,
+          remote_policy: formData.remote_policy || null,
+          culture_score: formData.culture_score,
+          growth_score: formData.growth_score,
+          work_life_balance_score: formData.wlb_score,
           status: 'pending'
         });
 
@@ -175,6 +189,7 @@ export default function OfferComparisonTool() {
       });
       fetchOffers();
     } catch (err) {
+      console.error('Add offer error:', err);
       toast.error('Failed to add offer');
     }
   };
