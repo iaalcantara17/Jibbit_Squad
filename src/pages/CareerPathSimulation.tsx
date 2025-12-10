@@ -82,7 +82,61 @@ export default function CareerPathSimulation() {
       if (error) throw error;
 
       if (data?.simulation) {
-        setSimulation(data.simulation);
+        // Transform API response to expected format
+        const apiPaths = data.simulation.paths || [];
+        
+        // Convert API path format to our display format
+        const transformedPaths: CareerPath[] = [];
+        
+        // Get the recommended path (or first path)
+        const recommendedPathIdx = data.simulation.recommended_path ?? 0;
+        const selectedPath = apiPaths[recommendedPathIdx] || apiPaths[0];
+        
+        if (selectedPath) {
+          // Extract year data from the path
+          const yearKeys = ['year_1', 'year_3', 'year_5', 'year_10'].filter(
+            k => selectedPath[k]
+          );
+          
+          yearKeys.forEach((key, idx) => {
+            const yearData = selectedPath[key];
+            if (yearData) {
+              const yearNum = parseInt(key.split('_')[1]);
+              transformedPaths.push({
+                year: yearNum,
+                title: yearData.role || 'Unknown Role',
+                salary_low: Math.round((yearData.salary || 0) * 0.85),
+                salary_mid: Math.round(yearData.salary || 0),
+                salary_high: Math.round((yearData.salary || 0) * 1.15),
+                probability: Math.round((selectedPath.success_probability || 0.5) * 100)
+              });
+            }
+          });
+        }
+        
+        // Calculate lifetime earnings from transformed paths
+        const lifetimeEarningsLow = transformedPaths.reduce((sum, p) => sum + p.salary_low, 0);
+        const lifetimeEarningsMid = transformedPaths.reduce((sum, p) => sum + p.salary_mid, 0);
+        const lifetimeEarningsHigh = transformedPaths.reduce((sum, p) => sum + p.salary_high, 0);
+        
+        // Extract milestones
+        const milestones = (selectedPath?.key_milestones || []).map((m: string, idx: number) => ({
+          year: idx + 1,
+          event: m
+        }));
+        
+        setSimulation({
+          paths: transformedPaths,
+          lifetime_earnings_low: lifetimeEarningsLow,
+          lifetime_earnings_mid: lifetimeEarningsMid,
+          lifetime_earnings_high: lifetimeEarningsHigh,
+          success_probability: Math.round((selectedPath?.success_probability || 0.5) * 100),
+          key_milestones: milestones.length > 0 ? milestones : [
+            { year: 2, event: 'Skill development milestone' },
+            { year: 4, event: 'Career advancement' }
+          ],
+          risk_factors: selectedPath?.risk_factors || ['Economic conditions may vary']
+        });
       } else {
         // Generate demo simulation
         const paths: CareerPath[] = [];
