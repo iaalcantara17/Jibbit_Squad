@@ -3,12 +3,32 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-scheduler-secret',
 };
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Validate scheduler secret to prevent unauthorized access
+  const schedulerSecret = Deno.env.get('SCHEDULER_SECRET');
+  const providedSecret = req.headers.get('x-scheduler-secret');
+  
+  if (!schedulerSecret) {
+    console.error('SCHEDULER_SECRET not configured');
+    return new Response(
+      JSON.stringify({ error: 'Server configuration error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+  
+  if (providedSecret !== schedulerSecret) {
+    console.warn('Unauthorized access attempt to send-daily-notifications');
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 
   try {

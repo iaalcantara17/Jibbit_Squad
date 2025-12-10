@@ -22,7 +22,8 @@ import {
   Plus,
   Trash2,
   FileText,
-  Eye
+  Eye,
+  Brain
 } from "lucide-react";
 import { JobMatchScore } from "./JobMatchScore";
 import { SkillsGapAnalysis } from "./SkillsGapAnalysis";
@@ -34,6 +35,7 @@ import { CompanyNewsSection } from "./CompanyNewsSection";
 import { InterviewScheduler, InterviewData } from "./InterviewScheduler";
 import { ApplicationMaterialsDialog } from "./ApplicationMaterialsDialog";
 import { ReferralRequestsSection } from "./ReferralRequestsSection";
+import { AIInsightsTab } from "@/components/sprint4/AIInsightsTab";
 import { format } from "date-fns";
 import { Job, JobContact } from "@/types/jobs";
 import { cn } from "@/lib/utils";
@@ -308,6 +310,10 @@ export const JobDetailsModal = ({ job, isOpen, onClose, onUpdate }: JobDetailsMo
               <TabsTrigger value="prep">Prep</TabsTrigger>
               <TabsTrigger value="research">Research</TabsTrigger>
               <TabsTrigger value="referrals">Referrals</TabsTrigger>
+              <TabsTrigger value="ai-insights">
+                <Brain className="h-4 w-4 mr-1" />
+                AI Insights
+              </TabsTrigger>
               <TabsTrigger value="history">History</TabsTrigger>
             </TabsList>
 
@@ -613,6 +619,21 @@ export const JobDetailsModal = ({ job, isOpen, onClose, onUpdate }: JobDetailsMo
 
             <TabsContent value="referrals" className="space-y-4">
               <ReferralRequestsSection job={displayJob} />
+            </TabsContent>
+
+            <TabsContent value="ai-insights" className="space-y-4">
+              <AIInsightsTab
+                jobId={job.id}
+                jobTitle={displayJob.jobTitle || displayJob.title || ''}
+                jobDescription={displayJob.jobDescription}
+                companyName={companyName || ''}
+                applicationStatus={displayJob.status}
+                appliedDate={displayJob.createdAt}
+                industry={typeof displayJob.company !== 'string' ? displayJob.company?.industry : undefined}
+                location={displayJob.location}
+                resumeId={displayJob.resume_id}
+                coverLetterId={displayJob.cover_letter_id}
+              />
             </TabsContent>
 
             <TabsContent value="history" className="space-y-3">
